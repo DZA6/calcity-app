@@ -1,0 +1,143 @@
+class NewsItem {
+  final int id;
+  final String title;
+  final String content;
+  final String? sourceUrl;
+  final bool featured;
+  final DateTime createdAt;
+
+  NewsItem({
+    required this.id,
+    required this.title,
+    required this.content,
+    this.sourceUrl,
+    this.featured = false,
+    required this.createdAt,
+  });
+
+  factory NewsItem.fromJson(Map<String, dynamic> json) {
+    return NewsItem(
+      id: json['id'] as int,
+      title: json['title'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      sourceUrl: json['source_url'] as String?,
+      featured: json['featured'] as bool? ?? false,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'content': content,
+    'source_url': sourceUrl,
+    'featured': featured,
+    'created_at': createdAt.toIso8601String(),
+  };
+
+  String get excerpt => content.length > 150
+      ? '${content.substring(0, 150)}...'
+      : content;
+}
+
+class EventItem {
+  final int id;
+  final String title;
+  final String? description;
+  final String? location;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String? category;
+
+  EventItem({
+    required this.id,
+    required this.title,
+    this.description,
+    this.location,
+    this.startDate,
+    this.endDate,
+    this.category,
+  });
+
+  factory EventItem.fromJson(Map<String, dynamic> json) {
+    return EventItem(
+      id: json['id'] as int,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      location: json['location'] as String?,
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'] as String)
+          : null,
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'] as String)
+          : null,
+      category: json['category'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'location': location,
+    'start_date': startDate?.toIso8601String(),
+    'end_date': endDate?.toIso8601String(),
+    'category': category,
+  };
+}
+
+class BusinessItem {
+  final int id;
+  final String name;
+  final String? description;
+  final String? category;
+  final String? contactPhone;
+  final String? contactEmail;
+  final String? website;
+  final String? address;
+  final bool isHomeBased;
+  final bool isFeatured;
+
+  BusinessItem({
+    required this.id,
+    required this.name,
+    this.description,
+    this.category,
+    this.contactPhone,
+    this.contactEmail,
+    this.website,
+    this.address,
+    this.isHomeBased = false,
+    this.isFeatured = false,
+  });
+
+  factory BusinessItem.fromJson(Map<String, dynamic> json) {
+    return BusinessItem(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String?,
+      category: json['category'] as String?,
+      contactPhone: json['contact_phone'] as String?,
+      contactEmail: json['contact_email'] as String?,
+      website: json['website'] as String?,
+      address: json['address'] as String?,
+      isHomeBased: json['is_home_based'] as bool? ?? false,
+      isFeatured: json['is_featured'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+    'category': category,
+    'contact_phone': contactPhone,
+    'contact_email': contactEmail,
+    'website': website,
+    'address': address,
+    'is_home_based': isHomeBased,
+    'is_featured': isFeatured,
+  };
+}

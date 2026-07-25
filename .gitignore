@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+db.sqlite3
+.DS_Store
+*.apk
+calcity_app/build/
+calcity_app/.dart_tool/
+calcity_app/.packages
+calcity_app/.flutter-plugins
