@@ -7,6 +7,8 @@ router = DefaultRouter()
 router.register(r"news", views.NewsItemViewSet, basename="news")
 router.register(r"events", views.EventViewSet, basename="event")
 router.register(r"businesses", views.BusinessViewSet, basename="business")
+router.register(r"alerts", views.AlertViewSet, basename="alert")
+router.register(r"agendas", views.CouncilAgendaViewSet, basename="agenda")
 
 urlpatterns = router.urls + [
     path("tips/", views.TipCreateView.as_view(), name="tip-create"),

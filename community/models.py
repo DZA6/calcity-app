@@ -96,3 +96,38 @@ class CommunityTip(models.Model):
         verbose_name = "Community Tip"
         verbose_name_plural = "Community Tips"
         ordering = ["-created_at"]
+
+
+class Alert(models.Model):
+    SEVERITY_CHOICES = [
+        ("info", "Info"),
+        ("warning", "Warning"),
+        ("emergency", "Emergency"),
+    ]
+
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class CouncilAgenda(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    meeting_date = models.DateTimeField()
+    pdf_url = models.URLField(blank=True)
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["-meeting_date"]

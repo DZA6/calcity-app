@@ -88,6 +88,88 @@ class EventItem {
   };
 }
 
+class AlertItem {
+  final int id;
+  final String title;
+  final String message;
+  final String severity;
+  final bool isActive;
+  final DateTime createdAt;
+
+  AlertItem({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.severity,
+    this.isActive = true,
+    required this.createdAt,
+  });
+
+  factory AlertItem.fromJson(Map<String, dynamic> json) {
+    return AlertItem(
+      id: json['id'] as int,
+      title: json['title'] as String? ?? '',
+      message: json['message'] as String? ?? '',
+      severity: json['severity'] as String? ?? 'info',
+      isActive: json['is_active'] as bool? ?? true,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'message': message,
+    'severity': severity,
+    'is_active': isActive,
+    'created_at': createdAt.toIso8601String(),
+  };
+}
+
+class CouncilAgendaItem {
+  final int id;
+  final String title;
+  final String? description;
+  final DateTime? meetingDate;
+  final String? pdfUrl;
+  final DateTime createdAt;
+
+  CouncilAgendaItem({
+    required this.id,
+    required this.title,
+    this.description,
+    this.meetingDate,
+    this.pdfUrl,
+    required this.createdAt,
+  });
+
+  factory CouncilAgendaItem.fromJson(Map<String, dynamic> json) {
+    return CouncilAgendaItem(
+      id: json['id'] as int,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      meetingDate: json['meeting_date'] != null
+          ? DateTime.parse(json['meeting_date'] as String)
+          : null,
+      pdfUrl: json['pdf_url'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'meeting_date': meetingDate?.toIso8601String(),
+    'pdf_url': pdfUrl,
+    'created_at': createdAt.toIso8601String(),
+  };
+}
+
 class BusinessItem {
   final int id;
   final String name;

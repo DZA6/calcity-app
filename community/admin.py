@@ -1,6 +1,21 @@
 from django.contrib import admin
 
-from .models import Business, CommunityTip, Event, NewsItem
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem
+
+
+@admin.register(Alert)
+class AlertAdmin(admin.ModelAdmin):
+    list_display = ("title", "severity", "is_active", "created_at")
+    list_filter = ("severity", "is_active", "created_at")
+    search_fields = ("title", "message")
+    list_editable = ("is_active",)
+
+
+@admin.register(CouncilAgenda)
+class CouncilAgendaAdmin(admin.ModelAdmin):
+    list_display = ("title", "meeting_date", "is_approved", "created_at")
+    list_filter = ("is_approved", "meeting_date")
+    search_fields = ("title", "description")
 
 
 @admin.register(NewsItem)

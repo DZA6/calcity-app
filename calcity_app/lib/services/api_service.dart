@@ -69,6 +69,42 @@ class ApiService {
     return [];
   }
 
+  Future<List<AlertItem>> fetchAlerts() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/alerts'))
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body) as List<dynamic>;
+        return data
+            .map((e) => AlertItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // Network error or timeout — return empty list
+    }
+    return [];
+  }
+
+  Future<List<CouncilAgendaItem>> fetchCouncilAgendas() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/council-agendas'))
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body) as List<dynamic>;
+        return data
+            .map((e) => CouncilAgendaItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // Network error or timeout — return empty list
+    }
+    return [];
+  }
+
   Future<bool> submitTip({
     required String content,
     String? name,

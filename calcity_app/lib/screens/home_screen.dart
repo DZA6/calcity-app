@@ -10,6 +10,8 @@ import 'news_screen.dart';
 import 'events_screen.dart';
 import 'businesses_screen.dart';
 import 'tip_screen.dart';
+import 'alerts_screen.dart';
+import 'council_screen.dart';
 import 'detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -36,12 +38,14 @@ class _HomeScreenState extends State<HomeScreen> {
           if (provider.isLoading && provider.news.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
+          final theme = Theme.of(context);
 
           return RefreshIndicator(
             onRefresh: () => provider.refreshAll(),
             child: CustomScrollView(
               slivers: [
                 _buildSliverAppBar(),
+                SliverToBoxAdapter(child: _buildAlertBanner(context)),
                 SliverToBoxAdapter(child: _buildQuickActions(context)),
                 SliverToBoxAdapter(
                   child: Padding(
@@ -215,6 +219,96 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _buildEmptyState(context, Icons.store_outlined, 'No businesses yet'),
                   ),
 
+                // City Council Section
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                    child: _buildSectionHeader(
+                      context,
+                      title: 'City Council',
+                      icon: Icons.groups_outlined,
+                      count: provider.councilAgendas.length,
+                      onSeeAll: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CouncilScreen()),
+                      ),
+                    ),
+                  ),
+                ),
+                if (provider.councilAgendas.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 120,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: provider.councilAgendas.length > 5
+                            ? 5
+                            : provider.councilAgendas.length,
+                        itemBuilder: (context, index) {
+                          final item = provider.councilAgendas[index];
+                          final dateStr = item.meetingDate != null
+                              ? '${item.meetingDate!.month}/${item.meetingDate!.day}'
+                              : 'TBD';
+                          return Container(
+                            width: 200,
+                            margin: const EdgeInsets.only(right: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant
+                                    .withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today,
+                                      size: 14,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      dateStr,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  SliverToBoxAdapter(
+                    child: _buildEmptyState(
+                      context,
+                      Icons.groups_outlined,
+                      'No upcoming council meetings posted',
+                    ),
+                  ),
+
                 // Bottom padding
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
@@ -359,19 +453,116 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildAlertBanner(BuildContext context) {
+    final theme = Theme.of(context);
+    final provider = context.watch<ContentProvider>();
+    final activeAlerts = provider.activeAlerts
+        .where((a) => a.severity.toLowerCase() == 'emergency' ||
+            a.severity.toLowerCase() == 'warning' ||
+            a.severity.toLowerCase() == 'info')
+        .toList();
+
+    if (activeAlerts.isEmpty) return const SizedBox.shrink();
+
+    // Show highest severity alert
+    final priority = ['emergency', 'warning', 'info'];
+    activeAlerts.sort((a, b) =>
+        priority.indexOf(a.severity.toLowerCase())
+            .compareTo(priority.indexOf(b.severity.toLowerCase())));
+
+    final topAlert = activeAlerts.first;
+
+    Color bannerColor;
+    IconData bannerIcon;
+    switch (topAlert.severity.toLowerCase()) {
+      case 'emergency':
+        bannerColor = Colors.red.shade700;
+        bannerIcon = Icons.error;
+        break;
+      case 'warning':
+        bannerColor = Colors.amber.shade800;
+        bannerIcon = Icons.warning_amber;
+        break;
+      default:
+        bannerColor = Colors.blue.shade700;
+        bannerIcon = Icons.info_outline;
+    }
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AlertsScreen()),
+      ),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bannerColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: bannerColor.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(bannerIcon, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    topAlert.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Tap to read',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.white.withValues(alpha: 0.7),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickActions(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Row(
         children: [
           _quickActionCard(context, Icons.article_outlined, 'News', const NewsScreen(), theme),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           _quickActionCard(context, Icons.event_outlined, 'Events', const EventsScreen(), theme),
-          const SizedBox(width: 10),
-          _quickActionCard(context, Icons.store_outlined, 'Businesses', const BusinessesScreen(), theme),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
+          _quickActionCard(context, Icons.store_outlined, 'Biz', const BusinessesScreen(), theme),
+          const SizedBox(width: 6),
           _quickActionCard(context, Icons.lightbulb_outlined, 'Tip', const TipScreen(), theme),
+          const SizedBox(width: 6),
+          _quickActionCard(context, Icons.warning_amber, 'Alerts', const AlertsScreen(), theme),
         ],
       ),
     );
@@ -388,10 +579,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: GestureDetector(
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => screen)),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
@@ -404,23 +595,23 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
                   color: theme.colorScheme.primary,
-                  size: 22,
+                  size: 18,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurface,
                 ),

@@ -1,10 +1,12 @@
 from rest_framework import viewsets
 from rest_framework.generics import CreateAPIView
 
-from .models import Business, CommunityTip, Event, NewsItem
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem
 from .serializers import (
+    AlertSerializer,
     BusinessSerializer,
     CommunityTipSerializer,
+    CouncilAgendaSerializer,
     EventSerializer,
     NewsItemSerializer,
 )
@@ -39,3 +41,19 @@ class TipCreateView(CreateAPIView):
 
     queryset = CommunityTip.objects.all()
     serializer_class = CommunityTipSerializer
+
+
+class AlertViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public API — only returns active alerts, newest first."""
+
+    queryset = Alert.objects.filter(is_active=True)
+    serializer_class = AlertSerializer
+    ordering = ["-created_at"]
+
+
+class CouncilAgendaViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public API — only returns approved agendas, newest meeting first."""
+
+    queryset = CouncilAgenda.objects.filter(is_approved=True)
+    serializer_class = CouncilAgendaSerializer
+    ordering = ["-meeting_date"]

@@ -8,14 +8,24 @@ class ContentProvider extends ChangeNotifier {
   List<NewsItem> _news = [];
   List<EventItem> _events = [];
   List<BusinessItem> _businesses = [];
+  List<AlertItem> _alerts = [];
+  List<CouncilAgendaItem> _councilAgendas = [];
   bool _isLoading = false;
+  bool _isLoadingAlerts = false;
+  bool _isLoadingCouncil = false;
   String? _error;
 
   List<NewsItem> get news => _news;
   List<EventItem> get events => _events;
   List<BusinessItem> get businesses => _businesses;
+  List<AlertItem> get alerts => _alerts;
+  List<CouncilAgendaItem> get councilAgendas => _councilAgendas;
   bool get isLoading => _isLoading;
+  bool get isLoadingAlerts => _isLoadingAlerts;
+  bool get isLoadingCouncil => _isLoadingCouncil;
   String? get error => _error;
+
+  List<AlertItem> get activeAlerts => _alerts.where((a) => a.isActive).toList();
 
   List<NewsItem> get featuredNews => _news.where((n) => n.featured).toList();
   List<BusinessItem> get featuredBusinesses =>
@@ -30,6 +40,8 @@ class ContentProvider extends ChangeNotifier {
       refreshNews(silent: true),
       refreshEvents(silent: true),
       refreshBusinesses(silent: true),
+      fetchAlerts(),
+      fetchCouncilAgendas(),
     ]);
 
     _isLoading = false;
@@ -97,5 +109,27 @@ class ContentProvider extends ChangeNotifier {
     } else {
       notifyListeners();
     }
+  }
+
+  Future<void> fetchAlerts() async {
+    _isLoadingAlerts = true;
+    try {
+      _alerts = await _api.fetchAlerts();
+    } catch (e) {
+      _error = 'Failed to load alerts';
+    }
+    _isLoadingAlerts = false;
+    notifyListeners();
+  }
+
+  Future<void> fetchCouncilAgendas() async {
+    _isLoadingCouncil = true;
+    try {
+      _councilAgendas = await _api.fetchCouncilAgendas();
+    } catch (e) {
+      _error = 'Failed to load council agendas';
+    }
+    _isLoadingCouncil = false;
+    notifyListeners();
   }
 }
