@@ -6,8 +6,12 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AdService().initialize();
-  AdService().loadBannerAd();
+  try {
+    await AdService().initialize();
+    AdService().loadBannerAd();
+  } catch (_) {
+    // Ads unavailable on this platform
+  }
   runApp(const CalCityApp());
 }
 

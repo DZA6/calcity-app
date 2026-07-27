@@ -454,7 +454,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAlertBanner(BuildContext context) {
-    final theme = Theme.of(context);
     final provider = context.watch<ContentProvider>();
     final activeAlerts = provider.activeAlerts
         .where((a) => a.severity.toLowerCase() == 'emergency' ||

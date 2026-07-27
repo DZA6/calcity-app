@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -13,16 +15,28 @@ class AdService {
   bool get bannerLoaded => _bannerLoaded;
   BannerAd? get bannerAd => _bannerAd;
 
+  bool get _isSupportedPlatform =>
+      Platform.isAndroid || Platform.isIOS;
+
   Future<void> initialize() async {
     if (_initialized) return;
-    await MobileAds.instance.initialize();
+    if (!_isSupportedPlatform) {
+      _initialized = true;
+      return;
+    }
+    try {
+      await MobileAds.instance.initialize();
+    } catch (_) {
+      // Ads not available on this device
+    }
     _initialized = true;
   }
 
   void loadBannerAd() {
+    if (!_isSupportedPlatform) return;
     _bannerAd?.dispose();
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // Test ID
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(

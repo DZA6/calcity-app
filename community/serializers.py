@@ -25,10 +25,20 @@ class BusinessSerializer(serializers.ModelSerializer):
 
 
 class CommunityTipSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = CommunityTip
         fields = "__all__"
         read_only_fields = ["is_approved", "created_at"]
+
+    def create(self, validated_data):
+        if "name" in validated_data:
+            validated_data["submitter_name"] = validated_data.pop("name")
+        if "email" in validated_data:
+            validated_data["submitter_email"] = validated_data.pop("email")
+        return super().create(validated_data)
 
 
 class AlertSerializer(serializers.ModelSerializer):
