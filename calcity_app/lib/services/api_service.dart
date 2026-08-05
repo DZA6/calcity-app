@@ -8,10 +8,16 @@ class ApiService {
   ApiService._internal();
 
   /// Base URL for the backend API.
-  /// Defaults to Android emulator loopback (10.0.2.2 -> host machine).
-  /// For a real device on the same network, change this to your machine's
-  /// local IP, e.g. 'http://192.168.1.100:8000'.
-  String baseUrl = 'http://10.0.2.2:8000';
+  ///
+  /// Override at build time with:
+  ///   flutter build apk --dart-define=API_BASE_URL=https://calcityapp.pythonanywhere.com
+  /// Defaults (in order of preference):
+  ///   1. --dart-define API_BASE_URL (production: PythonAnywhere)
+  ///   2. Android emulator loopback (10.0.2.2 -> host machine, dev)
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+  String baseUrl = _envBaseUrl.isNotEmpty
+      ? _envBaseUrl
+      : 'http://10.0.2.2:8000';
 
   final Duration _timeout = const Duration(seconds: 15);
 
