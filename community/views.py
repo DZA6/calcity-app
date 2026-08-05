@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.generics import CreateAPIView
 
-from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, WeatherInfo
 from .serializers import (
     AlertSerializer,
     BusinessSerializer,
@@ -9,6 +9,7 @@ from .serializers import (
     CouncilAgendaSerializer,
     EventSerializer,
     NewsItemSerializer,
+    WeatherInfoSerializer,
 )
 
 
@@ -57,3 +58,25 @@ class CouncilAgendaViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CouncilAgenda.objects.filter(is_approved=True)
     serializer_class = CouncilAgendaSerializer
     ordering = ["-meeting_date"]
+
+
+class CategoryNewsViewSet(viewsets.ReadOnlyModelViewSet):
+    """News filtered by category slug: /api/news/?category=church or /api/category/church/."""
+
+    serializer_class = NewsItemSerializer
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        qs = NewsItem.objects.filter(is_approved=True)
+        cat = self.request.query_params.get("category")
+        if cat:
+            qs = qs.filter(category=cat)
+        return qs
+
+
+class WeatherInfoViewSet(viewsets.ReadOnlyModelViewSet):
+    """Latest weather update — only the most recent active one."""
+
+    queryset = WeatherInfo.objects.filter(is_active=True)[:1]
+    serializer_class = WeatherInfoSerializer
+    ordering = ["-created_at"]

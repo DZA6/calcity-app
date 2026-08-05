@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, WeatherInfo
 
 
 def _thumb(obj, field_name, size=60):
@@ -41,8 +41,8 @@ class CouncilAgendaAdmin(admin.ModelAdmin):
 
 @admin.register(NewsItem)
 class NewsItemAdmin(admin.ModelAdmin):
-    list_display = ("title", "image_thumb", "video_thumb", "is_approved", "featured", "created_at", "updated_at")
-    list_filter = ("is_approved", "featured", "created_at")
+    list_display = ("title", "category", "image_thumb", "video_thumb", "is_approved", "featured", "created_at", "updated_at")
+    list_filter = ("is_approved", "featured", "category", "created_at")
     search_fields = ("title", "content")
     list_editable = ("is_approved", "featured")
 
@@ -97,3 +97,10 @@ class TipAdmin(admin.ModelAdmin):
     list_filter = ("category", "is_approved", "created_at")
     search_fields = ("content", "submitter_name", "submitter_email")
     list_editable = ("is_approved",)
+
+
+@admin.register(WeatherInfo)
+class WeatherInfoAdmin(admin.ModelAdmin):
+    list_display = ("headline", "temperature_high", "temperature_low", "humidity", "wind", "is_active", "created_at")
+    list_filter = ("is_active",)
+    list_editable = ("is_active",)

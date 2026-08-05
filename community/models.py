@@ -2,15 +2,30 @@ from django.db import models
 
 
 class NewsItem(models.Model):
+    CATEGORY_CHOICES = [
+        ("general", "General News"),
+        ("city_works", "City Works"),
+        ("church", "Church / Faith"),
+        ("recreation", "Recreation & Parks"),
+        ("law_enforcement", "Law Enforcement"),
+        ("health", "Health & Wellness"),
+        ("education", "Schools & Education"),
+        ("business", "Business & Economy"),
+        ("traffic", "Traffic & Roads"),
+        ("community", "Community Events"),
+    ]
+
     title = models.CharField(max_length=200)
     content = models.TextField()
     source_url = models.CharField(max_length=500, blank=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="general",
+                                help_text="Which section of the app this appears in")
     image = models.ImageField(upload_to="news/", blank=True, null=True,
                               help_text="Optional: photo for this news item (JPEG/PNG)")
     video = models.FileField(upload_to="news/videos/", blank=True, null=True,
                              help_text="Optional: video clip for this news item (MP4)")
     is_approved = models.BooleanField(default=False)
-    featured = models.BooleanField(default=False)
+    featured = models.BooleanField(default=False, help_text="Show on the home page hero")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -141,3 +156,29 @@ class CouncilAgenda(models.Model):
 
     class Meta:
         ordering = ["-meeting_date"]
+
+
+class WeatherInfo(models.Model):
+    """A manually-posted weather update (e.g. 'Sunny, 94°F, windy afternoon').
+    Admin posts this at any frequency; the Flutter app shows the latest one.
+    Also holds sunrise/sunset and static tips (fire risk, heat advisory, etc)."""
+
+    headline = models.CharField(max_length=200, help_text="e.g. Sunny and hot, high of 94°F")
+    detail = models.TextField(blank=True, help_text="Extended forecast or advisory text")
+    sunrise = models.CharField(max_length=20, blank=True, help_text="e.g. 6:12 AM")
+    sunset = models.CharField(max_length=20, blank=True, help_text="e.g. 7:48 PM")
+    humidity = models.CharField(max_length=10, blank=True, help_text="e.g. 12%")
+    wind = models.CharField(max_length=100, blank=True, help_text="e.g. SW 8-15 mph")
+    fire_risk = models.CharField(max_length=50, blank=True, help_text="e.g. Moderate")
+    temperature_high = models.IntegerField(null=True, blank=True, help_text="Today's high (°F)")
+    temperature_low = models.IntegerField(null=True, blank=True, help_text="Tonight's low (°F)")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Weather {self.created_at:%Y-%m-%d %H:%M}: {self.headline}"
+
+    class Meta:
+        verbose_name = "Weather Update"
+        verbose_name_plural = "Weather Updates"
+        ordering = ["-created_at"]
