@@ -5,6 +5,10 @@ class NewsItem(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
     source_url = models.CharField(max_length=500, blank=True)
+    image = models.ImageField(upload_to="news/", blank=True, null=True,
+                              help_text="Optional: photo for this news item (JPEG/PNG)")
+    video = models.FileField(upload_to="news/videos/", blank=True, null=True,
+                             help_text="Optional: video clip for this news item (MP4)")
     is_approved = models.BooleanField(default=False)
     featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -30,6 +34,8 @@ class Event(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     location = models.CharField(max_length=300)
+    image = models.ImageField(upload_to="events/", blank=True, null=True,
+                              help_text="Optional: photo/flyer for this event (JPEG/PNG)")
     start_date = models.DateTimeField()
     end_date = models.DateTimeField(null=True, blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
@@ -56,6 +62,8 @@ class Business(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    image = models.ImageField(upload_to="businesses/", blank=True, null=True,
+                              help_text="Optional: logo or storefront photo (JPEG/PNG)")
     contact_phone = models.CharField(max_length=20, blank=True)
     contact_email = models.EmailField(blank=True)
     website = models.URLField(blank=True)
@@ -108,6 +116,8 @@ class Alert(models.Model):
     title = models.CharField(max_length=200)
     message = models.TextField()
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
+    image = models.ImageField(upload_to="alerts/", blank=True, null=True,
+                              help_text="Optional: alert graphic (JPEG/PNG)")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

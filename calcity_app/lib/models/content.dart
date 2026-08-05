@@ -3,6 +3,8 @@ class NewsItem {
   final String title;
   final String content;
   final String? sourceUrl;
+  final String? imageUrl;
+  final String? videoUrl;
   final bool featured;
   final DateTime createdAt;
 
@@ -11,6 +13,8 @@ class NewsItem {
     required this.title,
     required this.content,
     this.sourceUrl,
+    this.imageUrl,
+    this.videoUrl,
     this.featured = false,
     required this.createdAt,
   });
@@ -21,6 +25,8 @@ class NewsItem {
       title: json['title'] as String? ?? '',
       content: json['content'] as String? ?? '',
       sourceUrl: json['source_url'] as String?,
+      imageUrl: json['image_url'] as String?,
+      videoUrl: json['video_url'] as String?,
       featured: json['featured'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -33,6 +39,8 @@ class NewsItem {
     'title': title,
     'content': content,
     'source_url': sourceUrl,
+    'image_url': imageUrl,
+    'video_url': videoUrl,
     'featured': featured,
     'created_at': createdAt.toIso8601String(),
   };
@@ -47,6 +55,7 @@ class EventItem {
   final String title;
   final String? description;
   final String? location;
+  final String? imageUrl;
   final DateTime? startDate;
   final DateTime? endDate;
   final String? category;
@@ -56,6 +65,7 @@ class EventItem {
     required this.title,
     this.description,
     this.location,
+    this.imageUrl,
     this.startDate,
     this.endDate,
     this.category,
@@ -67,6 +77,7 @@ class EventItem {
       title: json['title'] as String? ?? '',
       description: json['description'] as String?,
       location: json['location'] as String?,
+      imageUrl: json['image_url'] as String?,
       startDate: json['start_date'] != null
           ? DateTime.parse(json['start_date'] as String)
           : null,
@@ -82,6 +93,7 @@ class EventItem {
     'title': title,
     'description': description,
     'location': location,
+    'image_url': imageUrl,
     'start_date': startDate?.toIso8601String(),
     'end_date': endDate?.toIso8601String(),
     'category': category,
@@ -93,6 +105,7 @@ class AlertItem {
   final String title;
   final String message;
   final String severity;
+  final String? imageUrl;
   final bool isActive;
   final DateTime createdAt;
 
@@ -101,6 +114,7 @@ class AlertItem {
     required this.title,
     required this.message,
     required this.severity,
+    this.imageUrl,
     this.isActive = true,
     required this.createdAt,
   });
@@ -111,6 +125,7 @@ class AlertItem {
       title: json['title'] as String? ?? '',
       message: json['message'] as String? ?? '',
       severity: json['severity'] as String? ?? 'info',
+      imageUrl: json['image_url'] as String?,
       isActive: json['is_active'] as bool? ?? true,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -123,6 +138,7 @@ class AlertItem {
     'title': title,
     'message': message,
     'severity': severity,
+    'image_url': imageUrl,
     'is_active': isActive,
     'created_at': createdAt.toIso8601String(),
   };
@@ -175,6 +191,7 @@ class BusinessItem {
   final String name;
   final String? description;
   final String? category;
+  final String? imageUrl;
   final String? contactPhone;
   final String? contactEmail;
   final String? website;
@@ -187,6 +204,7 @@ class BusinessItem {
     required this.name,
     this.description,
     this.category,
+    this.imageUrl,
     this.contactPhone,
     this.contactEmail,
     this.website,
@@ -201,6 +219,7 @@ class BusinessItem {
       name: json['name'] as String? ?? '',
       description: json['description'] as String?,
       category: json['category'] as String?,
+      imageUrl: json['image_url'] as String?,
       contactPhone: json['contact_phone'] as String?,
       contactEmail: json['contact_email'] as String?,
       website: json['website'] as String?,
@@ -215,6 +234,7 @@ class BusinessItem {
     'name': name,
     'description': description,
     'category': category,
+    'image_url': imageUrl,
     'contact_phone': contactPhone,
     'contact_email': contactEmail,
     'website': website,
