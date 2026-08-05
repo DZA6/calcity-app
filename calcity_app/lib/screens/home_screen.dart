@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../models/content.dart';
 import '../providers/content_provider.dart';
 import '../widgets/news_card.dart';
 import '../widgets/event_card.dart';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/content.dart';
 import '../providers/content_provider.dart';
 import '../widgets/news_card.dart';
 import 'detail_screen.dart';
