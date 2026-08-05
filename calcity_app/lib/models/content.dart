@@ -3,6 +3,7 @@ class NewsItem {
   final String title;
   final String content;
   final String? sourceUrl;
+  final String? category;
   final String? imageUrl;
   final String? videoUrl;
   final bool featured;
@@ -13,6 +14,7 @@ class NewsItem {
     required this.title,
     required this.content,
     this.sourceUrl,
+    this.category,
     this.imageUrl,
     this.videoUrl,
     this.featured = false,
@@ -25,6 +27,7 @@ class NewsItem {
       title: json['title'] as String? ?? '',
       content: json['content'] as String? ?? '',
       sourceUrl: json['source_url'] as String?,
+      category: json['category'] as String?,
       imageUrl: json['image_url'] as String?,
       videoUrl: json['video_url'] as String?,
       featured: json['featured'] as bool? ?? false,
@@ -39,6 +42,7 @@ class NewsItem {
     'title': title,
     'content': content,
     'source_url': sourceUrl,
+    'category': category,
     'image_url': imageUrl,
     'video_url': videoUrl,
     'featured': featured,
@@ -242,4 +246,51 @@ class BusinessItem {
     'is_home_based': isHomeBased,
     'is_featured': isFeatured,
   };
+}
+
+
+class WeatherInfo {
+  final int id;
+  final String headline;
+  final String? detail;
+  final int? temperatureHigh;
+  final int? temperatureLow;
+  final String? sunrise;
+  final String? sunset;
+  final String? humidity;
+  final String? wind;
+  final String? fireRisk;
+  final DateTime createdAt;
+
+  WeatherInfo({
+    required this.id,
+    required this.headline,
+    this.detail,
+    this.temperatureHigh,
+    this.temperatureLow,
+    this.sunrise,
+    this.sunset,
+    this.humidity,
+    this.wind,
+    this.fireRisk,
+    required this.createdAt,
+  });
+
+  factory WeatherInfo.fromJson(Map<String, dynamic> json) {
+    return WeatherInfo(
+      id: json['id'] as int,
+      headline: json['headline'] as String? ?? '',
+      detail: json['detail'] as String?,
+      temperatureHigh: json['temperature_high'] as int?,
+      temperatureLow: json['temperature_low'] as int?,
+      sunrise: json['sunrise'] as String?,
+      sunset: json['sunset'] as String?,
+      humidity: json['humidity'] as String?,
+      wind: json['wind'] as String?,
+      fireRisk: json['fire_risk'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+    );
+  }
 }

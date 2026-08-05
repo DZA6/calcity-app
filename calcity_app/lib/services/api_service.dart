@@ -138,4 +138,40 @@ class ApiService {
       return false;
     }
   }
+
+  Future<List<NewsItem>> fetchCategoryNews(String category) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/news?category=$category'))
+          .timeout(_timeout);
+      if (response.statusCode == 200) {
+        final List<dynamic> data =
+            json.decode(response.body) as List<dynamic>;
+        return data
+            .map((e) => NewsItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // ignore — return empty
+    }
+    return [];
+  }
+
+  Future<WeatherInfo?> fetchWeather() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/weather'))
+          .timeout(_timeout);
+      if (response.statusCode == 200) {
+        final List<dynamic> data =
+            json.decode(response.body) as List<dynamic>;
+        if (data.isNotEmpty) {
+          return WeatherInfo.fromJson(data.first as Map<String, dynamic>);
+        }
+      }
+    } catch (e) {
+      // offline — return null
+    }
+    return null;
+  }
 }

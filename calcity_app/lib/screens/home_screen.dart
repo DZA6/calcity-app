@@ -1,18 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:intl/intl.dart';
 import '../providers/content_provider.dart';
 import '../widgets/news_card.dart';
 import '../widgets/event_card.dart';
 import '../widgets/business_card.dart';
-import '../services/ad_service.dart';
 import 'news_screen.dart';
 import 'events_screen.dart';
 import 'businesses_screen.dart';
 import 'tip_screen.dart';
 import 'alerts_screen.dart';
 import 'council_screen.dart';
+import 'category_screen.dart';
 import 'detail_screen.dart';
+
+/// Category definitions for the hamburger drawer.
+const _drawerCategories = <_DrawerEntry>[
+  _DrawerEntry('City Works', 'city_works', Icons.engineering_outlined, Color(0xFF5F6B41)),
+  _DrawerEntry('Church / Faith', 'church', Icons.church_outlined, Color(0xFF8B5A3C)),
+  _DrawerEntry('Recreation & Parks', 'recreation', Icons.park_outlined, Color(0xFF4A7C59)),
+  _DrawerEntry('Law Enforcement', 'law_enforcement', Icons.local_police_outlined, Color(0xFF3A4B6D)),
+  _DrawerEntry('Health & Wellness', 'health', Icons.health_and_safety_outlined, Color(0xFF4D8C7A)),
+  _DrawerEntry('Schools & Education', 'education', Icons.school_outlined, Color(0xFF6B5B95)),
+  _DrawerEntry('Business & Economy', 'business', Icons.store_outlined, Color(0xFFB8573E)),
+  _DrawerEntry('Traffic & Roads', 'traffic', Icons.traffic_outlined, Color(0xFF8B6B3A)),
+  _DrawerEntry('Community Events', 'community', Icons.celebration_outlined, Color(0xFF9B5E3A)),
+];
+
+class _DrawerEntry {
+  final String label;
+  final String slug;
+  final IconData icon;
+  final Color color;
+  const _DrawerEntry(this.label, this.slug, this.icon, this.color);
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,298 +54,114 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Cal City'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => context.read<ContentProvider>().refreshAll(),
+            tooltip: 'Refresh',
+          ),
+        ],
+      ),
+      drawer: _buildDrawer(context),
       body: Consumer<ContentProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading && provider.news.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-          final theme = Theme.of(context);
-
           return RefreshIndicator(
             onRefresh: () => provider.refreshAll(),
-            child: CustomScrollView(
-              slivers: [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(child: _buildAlertBanner(context)),
-                SliverToBoxAdapter(child: _buildQuickActions(context)),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                    child: _buildSectionHeader(
-                      context,
-                      title: 'Latest News',
-                      icon: Icons.article_outlined,
-                      count: provider.news.length,
-                      onSeeAll: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NewsScreen()),
-                      ),
-                    ),
-                  ),
-                ),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+              children: [
+                // Weather card
+                _buildWeatherCard(context, provider),
+                const SizedBox(height: 16),
+                // Alert banners
+                if (provider.activeAlerts.isNotEmpty) ...[
+                  _buildAlertBanner(context, provider),
+                  const SizedBox(height: 16),
+                ],
+                // Quick category chips
+                _buildCategoryChips(context),
+                const SizedBox(height: 20),
+                // Featured News
+                _buildSectionHeader(context, 'Latest News', Icons.article_outlined,
+                    provider.news.length,
+                    onSeeAll: () => _push(context, const NewsScreen())),
+                const SizedBox(height: 10),
                 if (provider.news.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 270,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: provider.news.length,
-                        itemBuilder: (context, index) {
-                          final item = provider.news[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: NewsCard(
-                              item: item,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => DetailScreen(
-                                    title: item.title,
-                                    itemType: 'news',
-                                    content: item.content,
-                                    metadata: {
-                                      'date': item.createdAt.toIso8601String(),
-                                      if (item.sourceUrl != null)
-                                        'source_url': item.sourceUrl!,
-                                      if (item.featured) 'featured': 'true',
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                  SizedBox(
+                    height: 290,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: provider.news.length.clamp(0, 10),
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (_, i) => SizedBox(
+                        width: 260,
+                        child: NewsCard(
+                          item: provider.news[i],
+                          onTap: () => _openDetail(context, provider.news[i]),
+                        ),
                       ),
                     ),
                   )
                 else
-                  SliverToBoxAdapter(
-                    child: _buildEmptyState(context, Icons.article_outlined, 'No news yet'),
-                  ),
-
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                    child: _buildSectionHeader(
-                      context,
-                      title: 'Upcoming Events',
-                      icon: Icons.event_outlined,
-                      count: provider.events.length,
-                      onSeeAll: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const EventsScreen()),
-                      ),
-                    ),
-                  ),
-                ),
-                if (provider.events.isNotEmpty)
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = provider.events[index];
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            left: 20,
-                            right: 20,
-                            bottom: index < provider.events.length - 1 ? 8 : 0,
-                          ),
-                          child: EventCard(
-                            item: item,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DetailScreen(
-                                  title: item.title,
-                                  itemType: 'event',
-                                  content: item.description ?? 'No description available.',
-                                  metadata: {
-                                    if (item.startDate != null)
-                                      'start_date': item.startDate!.toIso8601String(),
-                                    if (item.endDate != null)
-                                      'end_date': item.endDate!.toIso8601String(),
-                                    if (item.location != null) 'location': item.location!,
-                                    if (item.category != null) 'category': item.category!,
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      childCount: provider.events.length > 3 ? 3 : provider.events.length,
-                    ),
-                  )
-                else
-                  SliverToBoxAdapter(
-                    child: _buildEmptyState(context, Icons.event_outlined, 'No events yet'),
-                  ),
-
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                    child: _buildSectionHeader(
-                      context,
-                      title: 'Featured Businesses',
-                      icon: Icons.store_outlined,
-                      count: provider.featuredBusinesses.length,
-                      onSeeAll: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const BusinessesScreen()),
-                      ),
-                    ),
-                  ),
-                ),
-                if (provider.featuredBusinesses.isNotEmpty)
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.9,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final item = provider.featuredBusinesses[index];
-                          return BusinessCard(
-                            item: item,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DetailScreen(
-                                  title: item.name,
-                                  itemType: 'business',
-                                  content: item.description ?? 'No description available.',
-                                  metadata: {
-                                    if (item.category != null) 'category': item.category!,
-                                    if (item.contactPhone != null) 'phone': item.contactPhone!,
-                                    if (item.contactEmail != null) 'email': item.contactEmail!,
-                                    if (item.website != null) 'website': item.website!,
-                                    if (item.address != null) 'address': item.address!,
-                                    if (item.isHomeBased) 'is_home_based': 'true',
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        childCount: provider.featuredBusinesses.length,
-                      ),
-                    ),
-                  )
-                else
-                  SliverToBoxAdapter(
-                    child: _buildEmptyState(context, Icons.store_outlined, 'No businesses yet'),
-                  ),
-
-                // City Council Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                    child: _buildSectionHeader(
-                      context,
-                      title: 'City Council',
-                      icon: Icons.groups_outlined,
-                      count: provider.councilAgendas.length,
-                      onSeeAll: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CouncilScreen()),
-                      ),
-                    ),
-                  ),
-                ),
-                if (provider.councilAgendas.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 120,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: provider.councilAgendas.length > 5
-                            ? 5
-                            : provider.councilAgendas.length,
-                        itemBuilder: (context, index) {
-                          final item = provider.councilAgendas[index];
-                          final dateStr = item.meetingDate != null
-                              ? '${item.meetingDate!.month}/${item.meetingDate!.day}'
-                              : 'TBD';
-                          return Container(
-                            width: 200,
-                            margin: const EdgeInsets.only(right: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: theme.colorScheme.outlineVariant
-                                    .withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_today,
-                                      size: 14,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      dateStr,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  item.title,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  )
-                else
-                  SliverToBoxAdapter(
-                    child: _buildEmptyState(
-                      context,
-                      Icons.groups_outlined,
-                      'No upcoming council meetings posted',
-                    ),
-                  ),
-
-                // Bottom padding
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-                // Banner Ad
-                if (AdService().bannerLoaded && AdService().bannerAd != null)
-                  SliverToBoxAdapter(
-                    child: Container(
-                      alignment: Alignment.center,
+                  _emptyState(Icons.article_outlined, 'No news yet'),
+                const SizedBox(height: 24),
+                // Events
+                _buildSectionHeader(context, 'Upcoming Events', Icons.event_outlined,
+                    provider.events.length,
+                    onSeeAll: () => _push(context, const EventsScreen())),
+                const SizedBox(height: 10),
+                ...provider.events.take(3).map((e) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: SizedBox(
-                        width: AdService().bannerAd!.size.width.toDouble(),
-                        height: AdService().bannerAd!.size.height.toDouble(),
-                        child: AdWidget(ad: AdService().bannerAd!),
+                      child: EventCard(
+                        item: e,
+                        onTap: () => _openEventDetail(context, e),
                       ),
+                    )),
+                if (provider.events.isEmpty) _emptyState(Icons.event_outlined, 'No events yet'),
+                const SizedBox(height: 24),
+                // Businesses
+                _buildSectionHeader(context, 'Local Businesses', Icons.store_outlined,
+                    provider.featuredBusinesses.length,
+                    onSeeAll: () => _push(context, const BusinessesScreen())),
+                const SizedBox(height: 10),
+                if (provider.featuredBusinesses.isNotEmpty)
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.85,
                     ),
+                    itemCount: provider.featuredBusinesses.length,
+                    itemBuilder: (_, i) => BusinessCard(
+                      item: provider.featuredBusinesses[i],
+                      onTap: () => _openBusinessDetail(context, provider.featuredBusinesses[i]),
+                    ),
+                  )
+                else
+                  _emptyState(Icons.store_outlined, 'No businesses yet'),
+                const SizedBox(height: 24),
+                // Council
+                _buildSectionHeader(context, 'City Council', Icons.groups_outlined,
+                    provider.councilAgendas.length,
+                    onSeeAll: () => _push(context, const CouncilScreen())),
+                if (provider.councilAgendas.isNotEmpty)
+                  ...provider.councilAgendas.take(4).map((a) => _councilTile(context, a)),
+                // Footer
+                const SizedBox(height: 40),
+                Center(
+                  child: Text(
+                    'California City, CA',
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
                   ),
+                ),
               ],
             ),
           );
@@ -333,364 +170,304 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 180,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Stack(
-            children: [
-              // Decorative circles
-              Positioned(
-                top: -40,
-                right: -30,
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.06),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -50,
-                left: -20,
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.04),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 20,
-                right: 80,
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.05),
-                  ),
-                ),
-              ),
-              // Content
-              Positioned(
-                left: 24,
-                bottom: 28,
-                right: 24,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'California City',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                          onPressed: () => context.read<ContentProvider>().refreshAll(),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.15),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Your Community Hub',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Discover what\'s happening',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _push(BuildContext context, Widget screen) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+
+  void _openDetail(BuildContext context, dynamic item) {
+    if (item is! NewsItem) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DetailScreen(
+      title: item.title,
+      itemType: 'news',
+      content: item.content,
+      metadata: {
+        'date': item.createdAt.toIso8601String(),
+        if (item.sourceUrl != null) 'source_url': item.sourceUrl!,
+        if (item.imageUrl != null) 'image_url': item.imageUrl!,
+        if (item.videoUrl != null) 'video_url': item.videoUrl!,
+      },
+    )));
   }
 
-  Widget _buildAlertBanner(BuildContext context) {
-    final provider = context.watch<ContentProvider>();
-    final activeAlerts = provider.activeAlerts
-        .where((a) => a.severity.toLowerCase() == 'emergency' ||
-            a.severity.toLowerCase() == 'warning' ||
-            a.severity.toLowerCase() == 'info')
-        .toList();
+  void _openEventDetail(BuildContext context, EventItem e) =>
+      _push(context, DetailScreen(title: e.title, itemType: 'event',
+          content: e.description ?? '', metadata: {
+        if (e.startDate != null) 'start_date': e.startDate!.toIso8601String(),
+        if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
+        if (e.location != null) 'location': e.location!,
+        if (e.imageUrl != null) 'image_url': e.imageUrl!,
+      }));
 
-    if (activeAlerts.isEmpty) return const SizedBox.shrink();
+  void _openBusinessDetail(BuildContext context, BusinessItem b) =>
+      _push(context, DetailScreen(title: b.name, itemType: 'business',
+          content: b.description ?? '', metadata: {
+        if (b.category != null) 'category': b.category!,
+        if (b.imageUrl != null) 'image_url': b.imageUrl!,
+        if (b.contactPhone != null) 'phone': b.contactPhone!,
+        if (b.contactEmail != null) 'email': b.contactEmail!,
+        if (b.website != null) 'website': b.website!,
+      }));
 
-    // Show highest severity alert
-    final priority = ['emergency', 'warning', 'info'];
-    activeAlerts.sort((a, b) =>
-        priority.indexOf(a.severity.toLowerCase())
-            .compareTo(priority.indexOf(b.severity.toLowerCase())));
-
-    final topAlert = activeAlerts.first;
-
-    Color bannerColor;
-    IconData bannerIcon;
-    switch (topAlert.severity.toLowerCase()) {
-      case 'emergency':
-        bannerColor = Colors.red.shade700;
-        bannerIcon = Icons.error;
-        break;
-      case 'warning':
-        bannerColor = Colors.amber.shade800;
-        bannerIcon = Icons.warning_amber;
-        break;
-      default:
-        bannerColor = Colors.blue.shade700;
-        bannerIcon = Icons.info_outline;
-    }
-
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AlertsScreen()),
-      ),
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: bannerColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: bannerColor.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
+  // ---- Drawer ----
+  Widget _buildDrawer(BuildContext context) {
+    final theme = Theme.of(context);
+    return Drawer(
+      child: SafeArea(
+        child: Column(
           children: [
-            Icon(bannerIcon, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
+            // Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    topAlert.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Icon(Icons.location_city, color: Colors.white.withValues(alpha: 0.9), size: 32),
+                  const SizedBox(height: 12),
+                  const Text('California City',
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text('Community Hub',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
+                ],
+              ),
+            ),
+            // Weather summary in drawer
+            Consumer<ContentProvider>(
+              builder: (context, provider, _) {
+                final w = provider.weather;
+                if (w == null) return const SizedBox.shrink();
+                return Container(
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Tap to read',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 12,
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.wb_sunny_outlined, color: Colors.amber.shade700, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${w.temperatureHigh ?? '—'}°F / ${w.temperatureLow ?? '—'}°F',
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+                            Text(w.headline, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            // Category menu items
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                children: [
+                  ..._drawerCategories.map((cat) => ListTile(
+                    leading: Icon(cat.icon, color: cat.color, size: 22),
+                    title: Text(cat.label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                    trailing: const Icon(Icons.chevron_right, size: 18),
+                    onTap: () {
+                      Navigator.pop(context); // close drawer
+                      _push(context, CategoryScreen(category: cat.slug, title: cat.label));
+                    },
+                  )),
+                  const Divider(indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: Icon(Icons.groups_outlined, color: theme.colorScheme.primary, size: 22),
+                    title: const Text('City Council', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                    onTap: () { Navigator.pop(context); _push(context, const CouncilScreen()); },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.campaign_outlined, color: Colors.red.shade600, size: 22),
+                    title: const Text('Alerts', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                    onTap: () { Navigator.pop(context); _push(context, const AlertsScreen()); },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.edit_note_outlined, color: theme.colorScheme.primary, size: 22),
+                    title: const Text('Submit a Tip', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                    onTap: () { Navigator.pop(context); _push(context, const TipScreen()); },
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.white.withValues(alpha: 0.7),
-              size: 20,
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          _quickActionCard(context, Icons.article_outlined, 'News', const NewsScreen(), theme),
-          const SizedBox(width: 6),
-          _quickActionCard(context, Icons.event_outlined, 'Events', const EventsScreen(), theme),
-          const SizedBox(width: 6),
-          _quickActionCard(context, Icons.store_outlined, 'Biz', const BusinessesScreen(), theme),
-          const SizedBox(width: 6),
-          _quickActionCard(context, Icons.lightbulb_outlined, 'Tip', const TipScreen(), theme),
-          const SizedBox(width: 6),
-          _quickActionCard(context, Icons.warning_amber, 'Alerts', const AlertsScreen(), theme),
-        ],
-      ),
-    );
-  }
+  // ---- Home screen widgets ----
 
-  Widget _quickActionCard(
-    BuildContext context,
-    IconData icon,
-    String label,
-    Widget screen,
-    ThemeData theme,
-  ) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => screen)),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: theme.colorScheme.primary,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
+  Widget _buildWeatherCard(BuildContext context, ContentProvider provider) {
+    final theme = Theme.of(context);
+    final w = provider.weather;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          colors: [const Color(0xFF1565C0), const Color(0xFF1565C0).withValues(alpha: 0.8)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
       ),
+      child: w == null
+          ? _weatherPlaceholder()
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.wb_sunny, color: Colors.amber.shade300, size: 40),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${w.temperatureHigh ?? '—'}°F / ${w.temperatureLow ?? '—'}°F',
+                          style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w700, height: 1.1)),
+                        Text(w.headline, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _weatherStat(Icons.water_drop_outlined, w.humidity ?? ''),
+                    const SizedBox(width: 16),
+                    _weatherStat(Icons.air, w.wind ?? ''),
+                    const SizedBox(width: 16),
+                    if (w.fireRisk != null && w.fireRisk!.isNotEmpty)
+                      _weatherStat(Icons.local_fire_department_outlined, w.fireRisk!),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 
-  Widget _buildSectionHeader(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required int count,
-    required VoidCallback onSeeAll,
-  }) {
-    final theme = Theme.of(context);
-    return Row(
+  Widget _weatherPlaceholder() {
+    return const Row(
       children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          '$count items',
-          style: TextStyle(
-            fontSize: 13,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(width: 8),
-        TextButton(
-          onPressed: onSeeAll,
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: const Text('See All'),
+        Icon(Icons.wb_sunny, color: Colors.white54, size: 40),
+        SizedBox(width: 14),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Weather', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w600)),
+            Text('Update coming soon', style: TextStyle(color: Colors.white54, fontSize: 14)),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, IconData icon, String message) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+  Widget _weatherStat(IconData icon, String value) {
+    if (value.isEmpty) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 14),
+        const SizedBox(width: 4),
+        Text(value, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildAlertBanner(BuildContext context, ContentProvider provider) {
+    final topAlert = provider.activeAlerts.first;
+    final severity = topAlert.severity.toLowerCase();
+    final color = severity == 'emergency' ? Colors.red.shade800
+        : severity == 'warning' ? Colors.amber.shade800
+        : Colors.blue.shade800;
+
+    return GestureDetector(
+      onTap: () => _push(context, const AlertsScreen()),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 36, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+        child: Row(children: [
+          Icon(Icons.campaign, color: Colors.white, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(topAlert.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
+          const Icon(Icons.chevron_right, color: Colors.white, size: 18),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChips(BuildContext context) {
+    final theme = Theme.of(context);
+    final cats = _drawerCategories.take(6).toList();
+    return Wrap(
+      spacing: 8, runSpacing: 8,
+      children: cats
+          .map((c) => ActionChip(
+                avatar: Icon(c.icon, color: c.color, size: 16),
+                label: Text(c.label, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface)),
+                side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                onPressed: () => _push(context, CategoryScreen(category: c.slug, title: c.label)),
+              ))
+          .toList(),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title, IconData icon, int count, {VoidCallback? onSeeAll}) {
+    return Row(children: [
+      Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+      const SizedBox(width: 8),
+      Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      const SizedBox(width: 8),
+      Text('($count)', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline)),
+      const Spacer(),
+      if (onSeeAll != null)
+        TextButton(onPressed: onSeeAll, child: const Text('See all', style: TextStyle(fontWeight: FontWeight.w600))),
+    ]);
+  }
+
+  Widget _emptyState(IconData icon, String msg) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Column(children: [
+          Icon(icon, color: Theme.of(context).colorScheme.outline, size: 36),
+          const SizedBox(height: 8),
+          Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _councilTile(BuildContext context, council) {
+    final theme = Theme.of(context);
+    String date = 'TBD';
+    if (council.meetingDate != null) date = DateFormat('MMM d').format(council.meetingDate!);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(Icons.calendar_today, color: theme.colorScheme.primary),
+        title: Text(council.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+        trailing: Chip(label: Text(date, style: const TextStyle(fontSize: 11)), visualDensity: VisualDensity.compact),
+        onTap: () {
+          _push(context, DetailScreen(
+            title: council.title, itemType: 'council',
+            content: council.description ?? '',
+            metadata: {'pdf_url': council.pdfUrl ?? '', 'meeting_date': council.meetingDate?.toIso8601String() ?? ''},
+          ));
+        },
       ),
     );
   }
