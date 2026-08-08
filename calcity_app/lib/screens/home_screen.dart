@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/content.dart';
@@ -36,6 +37,27 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   void _push(Widget screen) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
 
+  Widget _shimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade900,
+      highlightColor: Colors.grey.shade700,
+      child: ListView(padding: const EdgeInsets.all(16), children: List.generate(6, (i) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(width: 120, height: 80, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(height: 14, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+            const SizedBox(height: 8),
+            Container(height: 14, width: 200, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+            const SizedBox(height: 8),
+            Container(height: 10, width: 100, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+          ])),
+        ]),
+      ))),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -47,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       body: Consumer2<ContentProvider, SettingsProvider>(
         builder: (context, prov, settings, _) {
           if (prov.isLoading && prov.news.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return _shimmerLoading();
           }
           return RefreshIndicator(
             onRefresh: () => prov.refreshAll(),
