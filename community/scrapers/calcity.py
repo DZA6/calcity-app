@@ -15,6 +15,7 @@ from datetime import datetime
 
 from .base import BaseScraper
 from community.models import Business, NewsItem
+from typing import Optional
 
 logger = logging.getLogger("scrapers.calcity")
 
@@ -178,6 +179,12 @@ class CalCityScraper(BaseScraper):
             logger.error("CalCity OSM businesses failed: %s", e)
             stats["errors"] += 1
 
+        try:
+            self._enrich_businesses_osm()
+        except Exception as e:
+            logger.error("CalCity OSM enrichment failed: %s", e)
+            stats["errors"] += 1
+
         return stats
 
     # ------------------------------------------------------------------
@@ -259,6 +266,52 @@ class CalCityScraper(BaseScraper):
         return saved
 
     # ------------------------------------------------------------------
+    # Shared Overpass helper (retry + mirror fallback)
+    # ------------------------------------------------------------------
+
+    OVERPASS_ENDPOINTS = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+    ]
+
+    def _overpass_query(self, query: str) -> Optional[list]:
+        """
+        POST an Overpass QL query via curl --data-urlencode (urllib gets 406).
+        Tries each endpoint twice (transient error pages happen under load)
+        and returns the JSON 'elements' list, or None if all fail.
+        """
+        import subprocess
+
+        query_clean = " ".join(query.split())
+        for endpoint in self.OVERPASS_ENDPOINTS:
+            for attempt in range(2):
+                self._respect_delay()
+                try:
+                    result = subprocess.run(
+                        [
+                            "curl", "-s", "--max-time", str(self.TIMEOUT),
+                            endpoint,
+                            "-H", "Accept: application/json",
+                            "--data-urlencode", f"data={query_clean}",
+                        ],
+                        capture_output=True, text=True, timeout=self.TIMEOUT + 5,
+                    )
+                    if result.returncode != 0:
+                        logger.warning("curl %s failed: %s", endpoint, result.stderr[:150])
+                        continue
+                    data = json.loads(result.stdout)
+                    return data.get("elements", [])
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.warning(
+                        "Overpass %s attempt %d returned non-JSON: %s",
+                        endpoint, attempt + 1, e,
+                    )
+                except Exception as e:
+                    logger.warning("Overpass %s attempt %d error: %s", endpoint, attempt + 1, e)
+        logger.error("Overpass query failed on all endpoints")
+        return None
+
+    # ------------------------------------------------------------------
     # Businesses from OpenStreetMap
     # ------------------------------------------------------------------
 
@@ -279,28 +332,10 @@ class CalCityScraper(BaseScraper):
 out body;
 """
 
-        try:
-            import subprocess
-            query_clean = " ".join(query.split())
-            self._respect_delay()
-            result = subprocess.run(
-                [
-                    "curl", "-s", "--max-time", str(self.TIMEOUT),
-                    "https://overpass-api.de/api/interpreter",
-                    "-H", "Accept: application/json",
-                    "--data-urlencode", f"data={query_clean}",
-                ],
-                capture_output=True, text=True, timeout=self.TIMEOUT + 5,
-            )
-            if result.returncode != 0:
-                logger.error("curl Overpass failed: %s", result.stderr[:200])
-                return 0
-            data = json.loads(result.stdout)
-        except Exception as e:
-            logger.error("Overpass API failed: %s", e)
+        elements = self._overpass_query(query)
+        if elements is None:
             return 0
 
-        elements = data.get("elements", [])
         saved = 0
 
         for el in elements:
@@ -368,6 +403,96 @@ out body;
 
         logger.info("CalCity OSM businesses: %d saved (%d total POIs)", saved, len(elements))
         return saved
+
+    # ------------------------------------------------------------------
+    # OSM enrichment — fill blank address/website/phone on existing rows
+    # ------------------------------------------------------------------
+
+    def _enrich_businesses_osm(self) -> int:
+        """
+        Fill missing address/website/phone on existing Business rows using
+        OpenStreetMap data (nodes AND ways) in the city bbox. Matches by
+        normalized name (exact, or one-name-contains-the-other for >=6 char
+        names, catching "ACE Hardware Store" vs "Ace Hardware").
+
+        ADDITIVE ONLY: never overwrites a populated field. Idempotent by
+        design — once a field is filled it is left alone.
+        """
+        query = """
+[out:json][timeout:25];
+(
+  node["shop"](35.10,-118.05,35.20,-117.90);
+  node["amenity"](35.10,-118.05,35.20,-117.90);
+  node["office"](35.10,-118.05,35.20,-117.90);
+  node["craft"](35.10,-118.05,35.20,-117.90);
+  way["shop"](35.10,-118.05,35.20,-117.90);
+  way["amenity"](35.10,-118.05,35.20,-117.90);
+  way["office"](35.10,-118.05,35.20,-117.90);
+  way["craft"](35.10,-118.05,35.20,-117.90);
+);
+out tags;
+"""
+
+        def _norm(name: str) -> str:
+            return re.sub(r"[^a-z0-9]+", " ", name.lower()).strip()
+
+        elements = self._overpass_query(query)
+        if elements is None:
+            return 0
+
+        # Index OSM entries by normalized name
+        osm_index = {}
+        for el in elements:
+            tags = el.get("tags", {})
+            name = tags.get("name", "").strip()
+            if not name:
+                continue
+            osm_index.setdefault(_norm(name), []).append(tags)
+
+        # Businesses that could use enrichment (blank-string fields, not NULL)
+        candidates = Business.objects.filter(is_approved=True)
+        enriched = 0
+        for biz in candidates:
+            need = bool(biz.address) + bool(biz.website) + bool(biz.contact_phone)
+            if need == 3:
+                continue
+            key = _norm(biz.name)
+            match = osm_index.get(key)
+            if not match:
+                # containment fallback
+                for k, v in osm_index.items():
+                    if len(key) >= 6 and len(k) >= 6 and (key in k or k in key):
+                        match = v
+                        break
+            if not match:
+                continue
+            tags = match[0]
+
+            changed = False
+            if not biz.address:
+                parts = []
+                for k in ["addr:housenumber", "addr:street", "addr:city", "addr:postcode"]:
+                    if tags.get(k):
+                        parts.append(tags[k])
+                if parts:
+                    biz.address = ", ".join(parts)[:300]
+                    changed = True
+            if not biz.website:
+                ws = tags.get("website", "") or tags.get("contact:website", "")
+                if ws and ws.startswith("http"):
+                    biz.website = ws[:200]
+                    changed = True
+            if not biz.contact_phone:
+                ph = tags.get("phone", "") or tags.get("contact:phone", "")
+                if ph:
+                    biz.contact_phone = ph[:20]
+                    changed = True
+            if changed:
+                biz.save()
+                enriched += 1
+
+        logger.info("CalCity OSM enrichment: %d businesses updated", enriched)
+        return enriched
 
     # ------------------------------------------------------------------
     # Agendas from Granicus RSS
