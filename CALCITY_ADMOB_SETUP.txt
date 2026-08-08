@@ -1,0 +1,91 @@
+CALCITY ADMOB SETUP GUIDE (2026-08-08)
+======================================
+
+The app code is DONE: a banner ad now sits above the bottom nav bar on
+every tab, and an interstitial shows every 3rd tab switch (max 1 per 2
+minutes). Everything currently uses Google's OFFICIAL TEST ad IDs, so
+the app works and shows fake "test ad" banners right now.
+
+These are the steps only YOU can do — they need your Google account.
+
+WHY ADS AREN'T SHOWING REAL ADS YET:
+  - Test IDs are hardcoded as the default (safe for development).
+  - Real ads need: an approved AdMob account + your App ID in the
+    manifest + your ad unit IDs passed at build time.
+
+─────────────────────────────────────────────────────────────────────
+STEP 1 — Create the AdMob account
+─────────────────────────────────────────────────────────────────────
+  a) Go to https://apps.admob.com with your Google account
+     (use mmsantelopevalley@gmail.com)
+  b) Click "Sign up for AdMob" -> fill in your details -> submit
+  c) You'll need to verify your phone number and address.
+     Approval usually takes a few hours to a few days.
+
+STEP 2 — Register the app
+─────────────────────────────────────────────────────────────────────
+  a) In AdMob: Apps -> Add app
+  b) Platform: Android
+  c) App name:  Cal City
+  d) Package name (EXACT):  com.calcity.calcity_app
+  e) App store listing: choose "No" (app is not on Google Play — you
+     distribute via GitHub Releases). AdMob will ask about this —
+     pick the option for an app not listed in a store.
+  f) Create.
+
+  IMPORTANT (policy heads-up): AdMob generally expects apps that show
+  ads to be available in a store (Play/App Store). Ads MAY be served
+  to sideloaded APK installs, but Google can pause serving if they
+  determine the app isn't properly listed. If revenue matters, the
+  safest long-term move is an UNLISTED Google Play listing (paid
+  $25 one-time developer fee) purely to satisfy policy while still
+  distributing via GitHub Releases.
+
+STEP 3 — Get your App ID and ad unit IDs
+─────────────────────────────────────────────────────────────────────
+  a) AdMob -> Apps -> your app -> App settings -> scroll to "App ID".
+     It looks like:  ca-app-pub-1234567890123456~1234567890
+  b) Ad units -> Add ad unit -> Banner -> Create:
+       Name: CalCity Banner
+       Format: Banner (320x50)
+     Copy the Ad unit ID:  ca-app-pub-1234567890123456/1234567890
+  c) Ad units -> Add ad unit -> Interstitial -> Create:
+       Name: CalCity Interstitial
+     Copy the Ad unit ID:  ca-app-pub-1234567890123456/0987654321
+
+STEP 4 — Wire the IDs into the app (on your machine)
+─────────────────────────────────────────────────────────────────────
+  a) Put your App ID in the manifest (replace the test ID):
+     File:  calcity_app/android/app/src/main/AndroidManifest.xml
+     Line:  <meta-data
+              android:name="com.google.android.gms.ads.APPLICATION_ID"
+              android:value="ca-app-pub-REAL-APP-ID"/>
+  b) Build the release APK WITH your ad unit IDs:
+
+     flutter build apk --release \
+       --dart-define=ADMOB_BANNER_ID=ca-app-pub-1234567890123456/1234567890 \
+       --dart-define=ADMOB_INTERSTITIAL_ID=ca-app-pub-1234567890123456/0987654321
+
+     (Without the --dart-define flags, the APK uses TEST ads — safe,
+     but you earn nothing.)
+
+  c) Distribute the new APK via GitHub Releases as usual.
+
+STEP 5 — Test on your phone BEFORE going wide
+─────────────────────────────────────────────────────────────────────
+  a) Install the test-ID APK (current build): you should see a gray
+     "Test Ad" banner above the nav bar.
+  b) Switch tabs 3 times: a test interstitial should appear.
+  c) Only after AdMob approves your account, build with the real IDs
+     and confirm real ads load (logcat shows "Ad served" lines).
+
+─────────────────────────────────────────────────────────────────────
+ALREADY FIXED IN THIS BUILD (no action needed)
+─────────────────────────────────────────────────────────────────────
+  - INTERNET permission added to the MAIN manifest — release APKs had
+    NO network access before (app couldn't load data in release!). Ads
+    and the API now work in release builds.
+  - Launcher label fixed: "calcity_app" -> "Cal City".
+  - Ad unit IDs configurable via --dart-define, test IDs by default.
+  - Banner rendered on all 5 tabs above the nav bar.
+  - Interstitial preloaded + shown every 3rd tab switch, 2-min cap.
