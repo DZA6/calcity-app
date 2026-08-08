@@ -46,6 +46,7 @@ urlpatterns = [
     path("", api_root, name="api-root"),
     path("admin/", admin.site.urls),
     path("api/", include("community.urls")),
+    path("api/auth/", include("users.urls")),
     path("manage/", include("community.manage_urls")),
 ]
 
