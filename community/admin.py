@@ -6,7 +6,9 @@ from .models import (
     Business,
     CommunityTip,
     CouncilAgenda,
+    Deal,
     Event,
+    FeaturedPlacement,
     NewsItem,
     School,
     WeatherInfo,
@@ -121,3 +123,19 @@ class SchoolAdmin(admin.ModelAdmin):
     list_filter = ("type", "is_approved")
     search_fields = ("name", "description", "address")
     list_editable = ("is_approved",)
+
+
+@admin.register(FeaturedPlacement)
+class FeaturedPlacementAdmin(admin.ModelAdmin):
+    list_display = ("business", "headline", "is_active", "is_paid", "start_date", "end_date")
+    list_filter = ("is_active", "is_paid")
+    list_editable = ("is_active", "is_paid")
+    raw_id_fields = ("business",)
+
+
+@admin.register(Deal)
+class DealAdmin(admin.ModelAdmin):
+    list_display = ("title", "business", "discount", "is_active", "expiry_date")
+    list_filter = ("is_active",)
+    list_editable = ("is_active",)
+    raw_id_fields = ("business",)

@@ -191,4 +191,29 @@ class ApiService {
     }
     return [];
   }
+
+  Future<List<dynamic>> fetchFeatured() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$baseUrl/api/featured/'))
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode == 200) {
+        return json.decode(resp.body) as List<dynamic>;
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<List<dynamic>> fetchDeals() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$baseUrl/api/deals/'))
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+        return (data['results'] as List<dynamic>?) ?? [];
+      }
+    } catch (_) {}
+    return [];
+  }
 }

@@ -14,6 +14,7 @@ import 'detail_screen.dart';
 import 'settings_screen.dart';
 import 'schools_screen.dart';
 import 'login_screen.dart';
+import 'news_screen.dart';
 import 'signup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -100,7 +101,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       items.add(const SizedBox(height: 10));
     }
 
-    // Timeline: merged news + events feed sorted by date
+    // Featured business promotions (paid slots)
+    if (prov.featured.isNotEmpty) {
+      items.add(_featuredCard(context, prov.featured.first));
+      items.add(const SizedBox(height: 10));
+    }
+
+    // Timeline: merged news + events feed sorted by date (5 items)
     if (settings.showNews || settings.showEvents) {
       items.add(_sectionHeader(cs, 'Timeline'));
       items.add(const SizedBox(height: 6));
@@ -140,8 +147,22 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       // Sort by date, newest first
       timelineItems.sort((a, b) => b.date.compareTo(a.date));
 
-      for (final entry in timelineItems.take(30)) {
+      for (final entry in timelineItems.take(5)) {
         items.add(entry.widget);
+      }
+
+      if (timelineItems.length > 5) {
+        items.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _push(const NewsScreen()),
+              icon: const Icon(Icons.arrow_forward, size: 16),
+              label: Text('See all ${timelineItems.length} posts', style: const TextStyle(fontSize: 13)),
+            ),
+          ),
+        ));
       }
     }
 
@@ -412,6 +433,64 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         fontWeight: FontWeight.w600,
         color: cs.onSurfaceVariant,
         letterSpacing: 0.3,
+      ),
+    );
+  }
+
+  // ---- Featured promotion card ----
+  Widget _featuredCard(BuildContext context, dynamic placement) {
+    final cs = Theme.of(context).colorScheme;
+    final name = placement['business_name'] ?? 'Local Business';
+    final headline = placement['headline'] ?? 'Featured';
+    final imageUrl = placement['business_image'];
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          colors: [cs.primary.withValues(alpha: 0.25), cs.tertiary.withValues(alpha: 0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.35)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: cs.primary.withValues(alpha: 0.15),
+              ),
+              child: const Icon(Icons.star, color: Color(0xFFFFD600), size: 28),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD600).withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('SPONSORED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFFFD600))),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  const SizedBox(height: 2),
+                  Text(headline, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: cs.primary),
+          ],
+        ),
       ),
     );
   }

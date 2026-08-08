@@ -41,6 +41,12 @@ class ContentProvider extends ChangeNotifier {
   List<NewsItem> get featuredNews => _cachedFeaturedNews;
   List<BusinessItem> get featuredBusinesses => _cachedFeaturedBusinesses;
 
+  // Featured placements + deals
+  List<dynamic> _featured = [];
+  List<dynamic> _deals = [];
+  List<dynamic> get featured => _featured;
+  List<dynamic> get deals => _deals;
+
   void _rebuildCaches() {
     _cachedActiveAlerts = _alerts.where((a) => a.isActive).toList();
     _cachedFeaturedNews = _news.where((n) => n.featured).toList();
@@ -68,6 +74,8 @@ class ContentProvider extends ChangeNotifier {
       _api.fetchCouncilAgendas(),
       _api.fetchWeather(),
       _api.fetchSchools(),
+      _api.fetchFeatured(),
+      _api.fetchDeals(),
     ]);
 
     _news = (results[0] as List<NewsItem>?) ?? _news;
@@ -77,6 +85,8 @@ class ContentProvider extends ChangeNotifier {
     _councilAgendas = (results[4] as List<CouncilAgendaItem>?) ?? _councilAgendas;
     if (results[5] is WeatherInfo) _weather = results[5] as WeatherInfo?;
     _schools = (results[6] as List<SchoolItem>?) ?? _schools;
+    _featured = (results[7] as List<dynamic>?) ?? [];
+    _deals = (results[8] as List<dynamic>?) ?? [];
 
     _rebuildCaches();
     _isLoading = false;

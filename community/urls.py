@@ -11,6 +11,8 @@ router.register(r"schools", views.SchoolViewSet, basename="school")
 router.register(r"alerts", views.AlertViewSet, basename="alert")
 router.register(r"council-agendas", views.CouncilAgendaViewSet, basename="agenda")
 router.register(r"weather", views.WeatherInfoViewSet, basename="weather")
+router.register(r"featured", views.FeaturedPlacementViewSet, basename="featured")
+router.register(r"deals", views.DealViewSet, basename="deal")
 
 urlpatterns = router.urls + [
     path("tips/", views.TipCreateView.as_view(), name="tip-create"),

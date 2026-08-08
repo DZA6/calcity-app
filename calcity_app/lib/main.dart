@@ -11,6 +11,7 @@ import 'screens/businesses_screen.dart';
 import 'screens/freelancers_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/category_screen.dart';
+import 'screens/deals_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 
@@ -261,6 +262,7 @@ class _MainShellState extends State<MainShell> {
     ExploreScreen(),
     BusinessesScreen(),
     AlertsScreen(),
+    DealsScreen(),
   ];
 
   @override
@@ -293,6 +295,11 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.campaign_outlined),
             selectedIcon: Icon(Icons.campaign),
             label: 'Alerts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.local_offer_outlined),
+            selectedIcon: Icon(Icons.local_offer),
+            label: 'Deals',
           ),
         ],
       ),

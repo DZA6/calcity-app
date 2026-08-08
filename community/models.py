@@ -210,4 +210,38 @@ class School(models.Model):
     class Meta:
         verbose_name = "School"
         verbose_name_plural = "Schools"
-        ordering = ["type", "name"]
+
+
+class FeaturedPlacement(models.Model):
+    """Paid promotion slot — businesses pay to be featured."""
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="promotions")
+    headline = models.CharField(max_length=120, help_text="Short promo text (e.g. '20% off this week')")
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_active = models.BooleanField(default=True)
+    is_paid = models.BooleanField(default=False, help_text="Has the business paid for this slot?")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Featured: {self.business.name} — {self.headline}"
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class Deal(models.Model):
+    """Time-limited deal / coupon from a local business."""
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="deals")
+    title = models.CharField(max_length=150)
+    description = models.TextField(blank=True)
+    discount = models.CharField(max_length=80, blank=True, help_text="e.g. '20% off', 'BOGO free'")
+    image = models.ImageField(upload_to="deals/", blank=True, null=True)
+    expiry_date = models.DateField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.business.name}: {self.title}"
+
+    class Meta:
+        ordering = ["-created_at"]

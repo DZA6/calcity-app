@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, School, WeatherInfo
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Deal, Event, FeaturedPlacement, NewsItem, School, WeatherInfo
 
 
 class MediaUrlMixin:
@@ -108,3 +108,39 @@ class WeatherInfoSerializer(serializers.ModelSerializer):
         model = WeatherInfo
         fields = "__all__"
         read_only_fields = ["id", "created_at"]
+
+
+class FeaturedPlacementSerializer(serializers.ModelSerializer):
+    business_name = serializers.CharField(source="business.name", read_only=True)
+    business_category = serializers.CharField(source="business.category", read_only=True)
+    business_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FeaturedPlacement
+        fields = ["id", "business", "business_name", "business_category", "business_image",
+                  "headline", "start_date", "end_date", "is_active", "is_paid", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def get_business_image(self, obj):
+        if obj.business.image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.business.image.url) if request else obj.business.image.url
+        return None
+
+
+class DealSerializer(serializers.ModelSerializer):
+    business_name = serializers.CharField(source="business.name", read_only=True)
+    business_category = serializers.CharField(source="business.category", read_only=True)
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Deal
+        fields = ["id", "business", "business_name", "business_category", "image_url",
+                  "title", "description", "discount", "expiry_date", "is_active", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.image.url) if request else obj.image.url
+        return None

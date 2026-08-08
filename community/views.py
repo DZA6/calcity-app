@@ -6,13 +6,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 
-from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, School, WeatherInfo
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Deal, Event, FeaturedPlacement, NewsItem, School, WeatherInfo
 from .serializers import (
     AlertSerializer,
     BusinessSerializer,
     CommunityTipSerializer,
     CouncilAgendaSerializer,
+    DealSerializer,
     EventSerializer,
+    FeaturedPlacementSerializer,
     NewsItemSerializer,
     SchoolSerializer,
     WeatherInfoSerializer,
@@ -136,3 +138,17 @@ class RegisterView(CreateAPIView):
             {"token": token.key, "username": user.username, "email": user.email},
             status=status.HTTP_201_CREATED,
         )
+
+
+class FeaturedPlacementViewSet(viewsets.ReadOnlyModelViewSet):
+    """Active paid promotions — latest first."""
+    queryset = FeaturedPlacement.objects.filter(is_active=True, is_paid=True).select_related("business")
+    serializer_class = FeaturedPlacementSerializer
+    pagination_class = None
+
+
+class DealViewSet(viewsets.ReadOnlyModelViewSet):
+    """Active deals — latest first."""
+    queryset = Deal.objects.filter(is_active=True).select_related("business")
+    serializer_class = DealSerializer
+    pagination_class = PageNumberPagination
