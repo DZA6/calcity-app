@@ -174,4 +174,21 @@ class ApiService {
     }
     return null;
   }
+
+  Future<List<SchoolItem>> fetchSchools() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/schools'))
+          .timeout(_timeout);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body) as List<dynamic>;
+        return data
+            .map((e) => SchoolItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // Network error or timeout — return empty list
+    }
+    return [];
+  }
 }

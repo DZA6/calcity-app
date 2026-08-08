@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, WeatherInfo
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, School, WeatherInfo
 
 
 class MediaUrlMixin:
@@ -94,6 +94,13 @@ class CouncilAgendaSerializer(serializers.ModelSerializer):
         model = CouncilAgenda
         fields = "__all__"
         read_only_fields = ["id", "title", "description", "meeting_date", "pdf_url", "created_at"]
+
+
+class SchoolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = School
+        fields = "__all__"
+        read_only_fields = ["id", "created_at"]
 
 
 class WeatherInfoSerializer(serializers.ModelSerializer):

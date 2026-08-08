@@ -13,6 +13,8 @@ from community.scrapers.ridgecrest import RidgecrestScraper
 from community.scrapers.tehachapi import TehachapiScraper
 from community.scrapers.calcity import CalCityScraper
 from community.scrapers.kerncounty import KernCountyScraper
+from community.scrapers.bakersfield import BakersfieldScraper
+from community.scrapers.lancaster import LancasterScraper
 
 logger = logging.getLogger("scrapers")
 
@@ -21,6 +23,8 @@ SCRAPERS = {
     "tehachapi": TehachapiScraper,
     "calcity": CalCityScraper,
     "kerncounty": KernCountyScraper,
+    "bakersfield": BakersfieldScraper,
+    "lancaster": LancasterScraper,
 }
 
 

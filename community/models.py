@@ -71,6 +71,7 @@ class Business(models.Model):
         ("local_shop", "Local Shop"),
         ("service", "Service"),
         ("restaurant", "Restaurant"),
+        ("business_support", "Business Support"),
         ("other", "Other"),
     ]
 
@@ -182,3 +183,31 @@ class WeatherInfo(models.Model):
         verbose_name = "Weather Update"
         verbose_name_plural = "Weather Updates"
         ordering = ["-created_at"]
+
+
+class School(models.Model):
+    """Educational institution in the California City / Mojave area."""
+    TYPE_CHOICES = [
+        ("elementary", "Elementary"),
+        ("middle", "Middle School"),
+        ("high", "High School"),
+        ("other", "Other"),
+    ]
+
+    name = models.CharField(max_length=200)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="other")
+    address = models.CharField(max_length=300, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    website = models.URLField(blank=True)
+    description = models.TextField(blank=True)
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "School"
+        verbose_name_plural = "Schools"
+        ordering = ["type", "name"]

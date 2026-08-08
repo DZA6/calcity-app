@@ -10,6 +10,7 @@ class ContentProvider extends ChangeNotifier {
   List<BusinessItem> _businesses = [];
   List<AlertItem> _alerts = [];
   List<CouncilAgendaItem> _councilAgendas = [];
+  List<SchoolItem> _schools = [];
   WeatherInfo? _weather;
   bool _isLoading = false;
   bool _isInitialized = false;
@@ -23,6 +24,7 @@ class ContentProvider extends ChangeNotifier {
   List<BusinessItem> get businesses => _businesses;
   List<AlertItem> get alerts => _alerts;
   List<CouncilAgendaItem> get councilAgendas => _councilAgendas;
+  List<SchoolItem> get schools => _schools;
   WeatherInfo? get weather => _weather;
   bool get isLoading => _isLoading;
   bool get isLoadingAlerts => _isLoadingAlerts;
@@ -65,6 +67,7 @@ class ContentProvider extends ChangeNotifier {
       _api.fetchAlerts(),
       _api.fetchCouncilAgendas(),
       _api.fetchWeather(),
+      _api.fetchSchools(),
     ]);
 
     _news = (results[0] as List<NewsItem>?) ?? _news;
@@ -73,6 +76,7 @@ class ContentProvider extends ChangeNotifier {
     _alerts = (results[3] as List<AlertItem>?) ?? _alerts;
     _councilAgendas = (results[4] as List<CouncilAgendaItem>?) ?? _councilAgendas;
     if (results[5] is WeatherInfo) _weather = results[5] as WeatherInfo?;
+    _schools = (results[6] as List<SchoolItem>?) ?? _schools;
 
     _rebuildCaches();
     _isLoading = false;

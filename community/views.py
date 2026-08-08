@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.generics import CreateAPIView
 
-from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, WeatherInfo
+from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, School, WeatherInfo
 from .serializers import (
     AlertSerializer,
     BusinessSerializer,
@@ -9,6 +9,7 @@ from .serializers import (
     CouncilAgendaSerializer,
     EventSerializer,
     NewsItemSerializer,
+    SchoolSerializer,
     WeatherInfoSerializer,
 )
 
@@ -72,6 +73,14 @@ class CategoryNewsViewSet(viewsets.ReadOnlyModelViewSet):
         if cat:
             qs = qs.filter(category=cat)
         return qs
+
+
+class SchoolViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public API — only returns approved schools."""
+
+    queryset = School.objects.filter(is_approved=True)
+    serializer_class = SchoolSerializer
+    ordering = ["type", "name"]
 
 
 class WeatherInfoViewSet(viewsets.ReadOnlyModelViewSet):

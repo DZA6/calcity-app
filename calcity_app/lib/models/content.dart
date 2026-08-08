@@ -248,7 +248,6 @@ class BusinessItem {
   };
 }
 
-
 class WeatherInfo {
   final int id;
   final String headline;
@@ -291,6 +290,38 @@ class WeatherInfo {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
+    );
+  }
+}
+
+class SchoolItem {
+  final int id;
+  final String name;
+  final String? type;
+  final String? address;
+  final String? phone;
+  final String? website;
+  final String? description;
+
+  SchoolItem({
+    required this.id,
+    required this.name,
+    this.type,
+    this.address,
+    this.phone,
+    this.website,
+    this.description,
+  });
+
+  factory SchoolItem.fromJson(Map<String, dynamic> json) {
+    return SchoolItem(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      type: json['type'] as String?,
+      address: json['address'] as String?,
+      phone: json['phone'] as String?,
+      website: json['website'] as String?,
+      description: json['description'] as String?,
     );
   }
 }
