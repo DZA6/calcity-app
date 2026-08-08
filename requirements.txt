@@ -5,3 +5,4 @@ django-ratelimit>=4.1
 whitenoise>=6.8
 gunicorn>=23.0
 python-dotenv>=1.0
+trafilatura>=2.0

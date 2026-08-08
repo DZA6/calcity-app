@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from .base import BaseScraper
-from community.models import Business
+from community.models import Business, NewsItem
 
 logger = logging.getLogger("scrapers.calcity")
 
@@ -445,17 +445,24 @@ out body;
     # ------------------------------------------------------------------
 
     def _scrape_desert_news(self) -> int:
-        """Scrape East Kern / California City news from desertnews.com."""
+        """Scrape East Kern / California City news from desertnews.com.
+
+        For each NEW article (dedup checked BEFORE fetching), downloads the
+        article page and extracts the real body text with trafilatura.
+        Falls back to a stub when extraction fails or trafilatura is not
+        installed (e.g. fresh clone before pip install -r requirements.txt).
+        """
         body = self.fetch_page("https://www.desertnews.com/news/")
         if not body:
             return 0
 
         saved = 0
 
-        # Find article links and titles
+        # Find article links and titles. DesertNews runs TownNews — article
+        # URLs are /news/article_<uuid>.html with the title as anchor text.
         article_pattern = re.compile(
-            r'<a[^>]*?href=["\']([^"\']*california[^"\']*city[^"\']*|\d{4}/[^"\']+)["\']'
-            r'[^>]*>([^<]+)</a>',
+            r'<a[^>]*?href=["\']([^"\']*/news/article_[a-f0-9-]+\.html)["\']'
+            r'[^>]*>(.*?)</a>',
             re.IGNORECASE,
         )
 
@@ -471,9 +478,17 @@ out body;
                 continue
             seen_urls.add(url)
 
+            # Skip known articles BEFORE fetching them (saves a request each)
+            if self.is_duplicate(NewsItem, title_raw, url):
+                continue
+
+            content = self._extract_article_content(url)
+            if not content:
+                content = f"East Kern County news. Read more at {url}"
+
             item = self.save_news(
                 title=title_raw,
-                content=f"East Kern County news. Read more at {url}",
+                content=content,
                 category="general",
                 source_url=url,
             )
@@ -482,3 +497,22 @@ out body;
 
         logger.info("CalCity news: %d saved", saved)
         return saved
+
+    def _extract_article_content(self, url: str) -> str:
+        """Extract the main article text with trafilatura. '' on any failure."""
+        try:
+            import trafilatura
+        except ImportError:
+            return ""
+
+        body = self.fetch_page(url)
+        if not body:
+            return ""
+
+        try:
+            text = trafilatura.extract(body)
+        except Exception:
+            text = None
+        if not text:
+            return ""
+        return text.strip()[:5000]
