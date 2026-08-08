@@ -19,30 +19,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import include, path
 
 
-def api_root(request):
-    """Health check + API index."""
-    return JsonResponse({
-        "app": "CalCity API",
-        "version": "1.0",
-        "endpoints": {
-            "news": "/api/news/",
-            "events": "/api/events/",
-            "businesses": "/api/businesses/",
-            "schools": "/api/schools/",
-            "alerts": "/api/alerts/",
-            "council_agendas": "/api/council-agendas/",
-            "weather": "/api/weather/",
-            "tips": "/api/tips/",
-            "admin": "/admin/",
-        },
-    })
-
-
 urlpatterns = [
-    path("", api_root, name="api-root"),
+    path("", lambda r: redirect("manage:dashboard"), name="root"),
+    path("api/health/", lambda r: JsonResponse({"status": "ok"}), name="health"),
     path("admin/", admin.site.urls),
     path("api/", include("community.urls")),
     path("api/auth/", include("users.urls")),
