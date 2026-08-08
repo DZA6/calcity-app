@@ -1,6 +1,4 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
@@ -16,7 +14,9 @@ class AdService {
   BannerAd? get bannerAd => _bannerAd;
 
   bool get _isSupportedPlatform =>
-      Platform.isAndroid || Platform.isIOS;
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   Future<void> initialize() async {
     if (_initialized) return;
