@@ -18,32 +18,13 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.http import JsonResponse
 from django.urls import include, path
 
-
-def api_root(request):
-    """Health check + API index."""
-    return JsonResponse({
-        "app": "CalCity API",
-        "version": "1.0",
-        "endpoints": {
-            "news": "/api/news/",
-            "events": "/api/events/",
-            "businesses": "/api/businesses/",
-            "schools": "/api/schools/",
-            "alerts": "/api/alerts/",
-            "council_agendas": "/api/council-agendas/",
-            "weather": "/api/weather/",
-            "tips": "/api/tips/",
-            "admin": "/admin/",
-        },
-        "docs": "API-only backend — no browser UI at /",
-    })
+from community.landing import landing_page
 
 
 urlpatterns = [
-    path("", api_root, name="api-root"),
+    path("", landing_page, name="landing"),
     path("admin/", admin.site.urls),
     path("api/", include("community.urls")),
     path("api/auth/", include("users.urls")),
