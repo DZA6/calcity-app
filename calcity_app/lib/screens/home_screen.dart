@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../app_page_route.dart';
 import '../models/content.dart';
 import '../providers/content_provider.dart';
 import '../providers/settings_provider.dart';
@@ -35,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   void _push(Widget screen) =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+      Navigator.push(context, AppPageRoute(screen));
 
   Widget _shimmerLoading() {
     return Shimmer.fromColors(
@@ -416,6 +417,14 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   // ---- Weather banner ----
+  Color _fireRiskColor(String risk) {
+    final r = risk.toLowerCase();
+    if (r.contains('extreme') || r.contains('critical')) return const Color(0xFFFF1744);
+    if (r.contains('high') || r.contains('very')) return const Color(0xFFFF9100);
+    if (r.contains('moderate')) return const Color(0xFFFFD600);
+    return const Color(0xFF00E676);
+  }
+
   Widget _weatherBanner(ColorScheme cs, WeatherInfo w) {
     return Container(
       width: double.infinity,
@@ -433,11 +442,38 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(w.headline,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                Row(children: [
+                  Expanded(child: Text(w.headline,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface))),
+                  if (w.fireRisk != null && w.fireRisk!.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _fireRiskColor(w.fireRisk!).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(w.fireRisk!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _fireRiskColor(w.fireRisk!))),
+                    ),
+                ]),
                 if (w.detail != null && w.detail!.isNotEmpty)
-                  Text(w.detail!,
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                  ...[
+                    const SizedBox(height: 3),
+                    Text(w.detail!, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                  ],
+                const SizedBox(height: 4),
+                Row(children: [
+                  if (w.humidity != null && w.humidity!.isNotEmpty) ...[
+                    Icon(Icons.water_drop_outlined, size: 14, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 2),
+                    Text(w.humidity!, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                    const SizedBox(width: 10),
+                  ],
+                  if (w.wind != null && w.wind!.isNotEmpty) ...[
+                    Icon(Icons.air, size: 14, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 2),
+                    Text(w.wind!, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                  ],
+                ]),
               ],
             ),
           ),
