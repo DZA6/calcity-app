@@ -62,6 +62,36 @@ FEEDS = [
         "url": "https://news.google.com/rss/search?q=mojave+california+news&hl=en-US&gl=US&ceid=US:en",
         "category": "general",
     },
+    {
+        "name": "Food Giveaways",
+        "url": "https://news.google.com/rss/search?q=kern+county+food+giveaway+food+bank&hl=en-US&gl=US&ceid=US:en",
+        "category": "community",
+    },
+    {
+        "name": "Kids & Family",
+        "url": "https://news.google.com/rss/search?q=bakersfield+kids+events+family&hl=en-US&gl=US&ceid=US:en",
+        "category": "community",
+    },
+    {
+        "name": "Church Outreach",
+        "url": "https://news.google.com/rss/search?q=lancaster+palmdale+church+food+assistance&hl=en-US&gl=US&ceid=US:en",
+        "category": "church",
+    },
+    {
+        "name": "Community Programs",
+        "url": "https://news.google.com/rss/search?q=antelope+valley+community+events+programs&hl=en-US&gl=US&ceid=US:en",
+        "category": "community",
+    },
+    {
+        "name": "School Giveaways",
+        "url": "https://news.google.com/rss/search?q=kern+county+back+to+school+giveaway+event&hl=en-US&gl=US&ceid=US:en",
+        "category": "community",
+    },
+    {
+        "name": "CalCity Programs",
+        "url": "https://news.google.com/rss/search?q=mojave+california+city+community+programs&hl=en-US&gl=US&ceid=US:en",
+        "category": "community",
+    },
 ]
 
 # Category keywords → map articles to the right section
