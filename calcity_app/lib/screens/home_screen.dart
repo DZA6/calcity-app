@@ -293,6 +293,50 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             _drawerToggle(cs, Icons.campaign_outlined, 'Alerts', settings.showAlerts, (v) => settings.setShowAlerts(v)),
             _drawerToggle(cs, Icons.account_balance_outlined, 'City Council', settings.showCouncil, (v) => settings.setShowCouncil(v)),
 
+            // Sign In / Sign Up / Profile
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                if (auth.isLoggedIn) {
+                  return ListTile(
+                    leading: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: cs.primaryContainer,
+                      child: Text(
+                        (auth.username ?? 'U')[0].toUpperCase(),
+                        style: TextStyle(color: cs.onPrimaryContainer, fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ),
+                    title: Text(auth.username ?? 'User', style: const TextStyle(fontSize: 14)),
+                    subtitle: Text(auth.email ?? '', style: const TextStyle(fontSize: 12)),
+                    trailing: TextButton(
+                      onPressed: () { auth.logout(); },
+                      child: const Text('Sign Out'),
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen())); },
+                          child: const Text('Sign Up'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())); },
+                          child: const Text('Sign In'),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
             const Divider(indent: 16, endIndent: 16),
 
             // Full settings

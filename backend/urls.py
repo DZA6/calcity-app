@@ -21,6 +21,8 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import include, path
+from rest_framework.authtoken.views import obtain_auth_token
+from community.views import RegisterView
 
 
 urlpatterns = [
@@ -28,6 +30,8 @@ urlpatterns = [
     path("api/health/", lambda r: JsonResponse({"status": "ok"}), name="health"),
     path("admin/", admin.site.urls),
     path("api/", include("community.urls")),
+    path("api/register/", RegisterView.as_view(), name="register"),
+    path("api/login/", obtain_auth_token, name="login"),
     path("api/auth/", include("users.urls")),
     path("manage/", include("community.manage_urls")),
 ]

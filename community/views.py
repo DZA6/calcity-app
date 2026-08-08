@@ -1,5 +1,9 @@
 from rest_framework import viewsets
 from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import AllowAny
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 
 from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, School, WeatherInfo
@@ -98,3 +102,37 @@ class WeatherInfoViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = WeatherInfoSerializer
     pagination_class = None
     ordering = ["-created_at"]
+
+
+class RegisterView(CreateAPIView):
+    """Create a new user account. Returns an auth token."""
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        from django.contrib.auth.models import User
+        username = request.data.get("username", "").strip()
+        email = request.data.get("email", "").strip()
+        password = request.data.get("password", "")
+
+        if not username or not password:
+            return Response(
+                {"error": "Username and password are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {"error": "That username is already taken."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if email and User.objects.filter(email=email).exists():
+            return Response(
+                {"error": "An account with that email already exists."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        user = User.objects.create_user(username=username, email=email, password=password)
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response(
+            {"token": token.key, "username": user.username, "email": user.email},
+            status=status.HTTP_201_CREATED,
+        )

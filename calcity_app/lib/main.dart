@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/content_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/auth_provider.dart';
 import 'services/ad_service.dart';
 import 'services/api_service.dart';
 import 'models/content.dart';
@@ -10,6 +11,8 @@ import 'screens/businesses_screen.dart';
 import 'screens/freelancers_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/category_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/signup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,8 +34,11 @@ class CalCityApp extends StatelessWidget {
       create: (_) => SettingsProvider()..load(),
       builder: (context, _) {
         final settings = context.watch<SettingsProvider>();
-        return ChangeNotifierProvider(
-          create: (_) => ContentProvider(),
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => ContentProvider()),
+            ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ],
           child: MaterialApp(
             title: 'Cal City',
             debugShowCheckedModeBanner: false,
