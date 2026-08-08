@@ -303,6 +303,28 @@ def alert_toggle(request, pk):
 
 
 @staff_member_required
+def alert_push(request, pk):
+    """AJAX: send this alert as an FCM push to the 'alerts' topic.
+
+    Returns {"ok": false, "detail": "FCM not configured"} when no Firebase
+    service account is set up yet — the button is safe to click anytime.
+    """
+    alert = get_object_or_404(Alert, pk=pk)
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    from .firebase_messaging import send_topic_message
+
+    ok, result = send_topic_message(
+        title=alert.title[:100],
+        body=alert.message[:180],
+        topic="alerts",
+        data={"type": "alert", "id": str(alert.pk), "severity": alert.severity},
+    )
+    return JsonResponse({"ok": ok, "detail": result})
+
+
+@staff_member_required
 def alert_delete(request, pk):
     """Delete an alert."""
     alert = get_object_or_404(Alert, pk=pk)

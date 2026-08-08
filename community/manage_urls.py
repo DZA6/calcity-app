@@ -25,6 +25,7 @@ urlpatterns = [
     path("alerts/new/", views.alert_edit, name="alert_edit"),
     path("alerts/<int:pk>/", views.alert_edit, name="alert_edit"),
     path("alerts/<int:pk>/toggle/", views.alert_toggle, name="alert_toggle"),
+    path("alerts/<int:pk>/push/", views.alert_push, name="alert_push"),
     path("alerts/<int:pk>/delete/", views.alert_delete, name="alert_delete"),
 
     # Events

@@ -35,6 +35,7 @@
         <span class="slider"></span>
       </label>
       <a href="{% url 'manage:alert_edit' alert.pk %}" class="btn btn-sm btn-outline">Edit</a>
+      <a href="#" onclick="pushAlert({{ alert.pk }}); return false;" class="btn btn-sm btn-outline" title="Send push notification to phones">Send Push</a>
       <a href="{% url 'manage:alert_delete' alert.pk %}" class="btn btn-sm" style="color:var(--danger);">&#128465;</a>
     </div>
   </div>
@@ -60,6 +61,14 @@ function toggleAlert(pk) {
   }).then(r => r.json()).then(d => {
     if (d.ok) location.reload();
   });
+}
+function pushAlert(pk) {
+  fetch("/manage/alerts/" + pk + "/push/", {
+    method: "POST",
+    headers: {"X-CSRFToken": "{{ csrf_token }}"}
+  }).then(r => r.json()).then(d => {
+    alert(d.ok ? ("Push sent: " + d.detail) : ("Push failed: " + d.detail));
+  }).catch(() => alert("Push request failed"));
 }
 </script>
 {% endblock %}
