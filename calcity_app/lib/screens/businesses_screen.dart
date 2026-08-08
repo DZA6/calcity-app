@@ -101,6 +101,119 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
             onRefresh: () => provider.refreshBusinesses(),
             child: CustomScrollView(
               slivers: [
+                // Featured businesses strip (starred businesses)
+                if (provider.featuredBusinesses.isNotEmpty) ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFD600)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'FEATURED',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 108,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: provider.featuredBusinesses.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (context, index) {
+                          final b = provider.featuredBusinesses[index];
+                          return GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DetailScreen(
+                                  title: b.name,
+                                  itemType: 'business',
+                                  content: b.description ?? 'No description available.',
+                                  metadata: {
+                                    if (b.category != null) 'category': b.category!,
+                                    if (b.contactPhone != null) 'phone': b.contactPhone!,
+                                    if (b.contactEmail != null) 'email': b.contactEmail!,
+                                    if (b.website != null) 'website': b.website!,
+                                    if (b.address != null) 'address': b.address!,
+                                  },
+                                ),
+                              ),
+                            ),
+                            child: Container(
+                              width: 200,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: theme.colorScheme.surface,
+                                border: Border.all(
+                                    color: theme.colorScheme.outline.withValues(alpha: 0.35)),
+                              ),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.asset('assets/images/banner_business.png',
+                                      fit: BoxFit.cover),
+                                  DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.7),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: 10,
+                                    top: 6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFD600),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: const Text('★',
+                                          style: TextStyle(fontSize: 10, color: Colors.black)),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: 10,
+                                    right: 10,
+                                    bottom: 8,
+                                    child: Text(
+                                      b.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 6)),
+                ],
                 // Search bar
                 SliverToBoxAdapter(
                   child: Padding(

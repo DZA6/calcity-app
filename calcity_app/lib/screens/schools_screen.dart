@@ -70,9 +70,25 @@ class _SchoolsScreenState extends State<SchoolsScreen> {
             onRefresh: () => prov.refreshAll(),
             child: ListView.builder(
               padding: const EdgeInsets.all(12),
-              itemCount: schools.length,
+              itemCount: schools.length + 1,
               itemBuilder: (_, i) {
-                final s = schools[i];
+                if (i == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      height: 110,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Image.asset(
+                        'assets/images/banner_events.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                }
+                final s = schools[i - 1];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Container(
@@ -118,7 +134,8 @@ class _SchoolsScreenState extends State<SchoolsScreen> {
                               maxLines: 3, overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                          if (s.address != null || s.phone != null || s.website != null) ...[
+                          if (s.address != null || s.phone != null || s.website != null ||
+                              s.calendarUrl != null || s.bellScheduleUrl != null) ...[
                             const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
@@ -132,6 +149,16 @@ class _SchoolsScreenState extends State<SchoolsScreen> {
                                   GestureDetector(
                                     onTap: () => _launch(s.website!),
                                     child: _infoChip(cs, Icons.open_in_new, 'Website'),
+                                  ),
+                                if (s.calendarUrl != null)
+                                  GestureDetector(
+                                    onTap: () => _launch(s.calendarUrl!),
+                                    child: _infoChip(cs, Icons.calendar_month_outlined, 'Calendar'),
+                                  ),
+                                if (s.bellScheduleUrl != null)
+                                  GestureDetector(
+                                    onTap: () => _launch(s.bellScheduleUrl!),
+                                    child: _infoChip(cs, Icons.schedule_outlined, 'Bell Schedule'),
                                   ),
                               ],
                             ),

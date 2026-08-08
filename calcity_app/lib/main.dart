@@ -13,8 +13,6 @@ import 'screens/freelancers_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/deals_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/signup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

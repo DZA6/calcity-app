@@ -16,6 +16,8 @@ import 'schools_screen.dart';
 import 'login_screen.dart';
 import 'news_screen.dart';
 import 'signup_screen.dart';
+import 'businesses_screen.dart';
+import 'tip_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -89,7 +91,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     final cs = Theme.of(context).colorScheme;
     final items = <Widget>[];
 
-    // Weather card at top
+    // Hero banner at the top
+    items.add(_heroBanner(context));
+    items.add(const SizedBox(height: 10));
+
+    // Weather card
     if (prov.weather != null) {
       items.add(_weatherBanner(cs, prov.weather!));
       items.add(const SizedBox(height: 10));
@@ -101,9 +107,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       items.add(const SizedBox(height: 10));
     }
 
-    // Featured business promotions (paid slots)
-    if (prov.featured.isNotEmpty) {
-      items.add(_featuredCard(context, prov.featured.first));
+    // Featured Businesses section (paid placements, or invite when empty)
+    if (settings.showBusinesses) {
+      items.add(_featuredSection(context, prov));
       items.add(const SizedBox(height: 10));
     }
 
@@ -437,53 +443,224 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  // ---- Featured promotion card ----
-  Widget _featuredCard(BuildContext context, dynamic placement) {
+  // ---- Hero banner ----
+  Widget _heroBanner(BuildContext context) {
+    return Container(
+      height: 172,
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/hero_desert.png',
+            fit: BoxFit.cover,
+          ),
+          // Scrim so the text reads on any theme
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.55),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'California City',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Your community, connected',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---- Featured Businesses section ----
+  Widget _featuredSection(BuildContext context, ContentProvider prov) {
+    final cs = Theme.of(context).colorScheme;
+    final placements = prov.featured;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.star_rounded, size: 18, color: Color(0xFFFFD600)),
+            const SizedBox(width: 6),
+            Expanded(child: _sectionHeader(cs, 'FEATURED BUSINESSES')),
+            TextButton(
+              onPressed: () => _push(const BusinessesScreen()),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              child: const Text('See all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        if (placements.isEmpty)
+          _featuredInviteCard(context)
+        else
+          SizedBox(
+            height: 132,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: placements.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, i) =>
+                  _featuredPlacementCard(context, placements[i]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _featuredPlacementCard(BuildContext context, dynamic placement) {
     final cs = Theme.of(context).colorScheme;
     final name = placement['business_name'] ?? 'Local Business';
     final headline = placement['headline'] ?? 'Featured';
+    final bizImage = placement['business_image'] as String?;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: LinearGradient(
-          colors: [cs.primary.withValues(alpha: 0.25), cs.tertiary.withValues(alpha: 0.1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: () => _push(const BusinessesScreen()),
+      child: Container(
+        width: 236,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: cs.surface,
+          border: Border.all(color: cs.outline.withValues(alpha: 0.35)),
         ),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.35)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (bizImage != null && bizImage.isNotEmpty)
+              Image.network(bizImage, fit: BoxFit.cover)
+            else
+              Image.asset('assets/images/banner_business.png', fit: BoxFit.cover),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.72),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 10,
+              top: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD600),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text('SPONSORED',
+                    style: TextStyle(
+                        fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black)),
+              ),
+            ),
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 10,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                  if (headline.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(headline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.85))),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Padding(
+    );
+  }
+
+  // Shown when no paid placements are active — the monetization nudge.
+  Widget _featuredInviteCard(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () => _push(const TipScreen()),
+      child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: LinearGradient(
+            colors: [cs.primary.withValues(alpha: 0.14), cs.tertiary.withValues(alpha: 0.08)],
+          ),
+          border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+        ),
         child: Row(
           children: [
             Container(
-              width: 56, height: 56,
+              width: 44, height: 44,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
                 color: cs.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.star, color: Color(0xFFFFD600), size: 28),
+              child: const Icon(Icons.star_outline_rounded, color: Color(0xFFFFD600), size: 24),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFD600).withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text('SPONSORED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFFFD600))),
-                    ),
-                  ]),
-                  const SizedBox(height: 4),
-                  Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  Text('Own a local business?',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
                   const SizedBox(height: 2),
-                  Text(headline, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                  Text('Get featured to the whole community.',
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                 ],
               ),
             ),

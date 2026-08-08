@@ -301,6 +301,8 @@ class SchoolItem {
   final String? address;
   final String? phone;
   final String? website;
+  final String? calendarUrl;
+  final String? bellScheduleUrl;
   final String? description;
 
   SchoolItem({
@@ -310,6 +312,8 @@ class SchoolItem {
     this.address,
     this.phone,
     this.website,
+    this.calendarUrl,
+    this.bellScheduleUrl,
     this.description,
   });
 
@@ -321,6 +325,8 @@ class SchoolItem {
       address: json['address'] as String?,
       phone: json['phone'] as String?,
       website: json['website'] as String?,
+      calendarUrl: json['calendar_url'] as String?,
+      bellScheduleUrl: json['bell_schedule_url'] as String?,
       description: json['description'] as String?,
     );
   }
