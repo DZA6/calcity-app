@@ -41,9 +41,13 @@
     <div class="qa-icon">&#9888;</div>
     <div><div class="qa-text">Post Alert</div><div class="qa-desc">Emergency, warning, or info</div></div>
   </a>
-  <a href="/admin/community/event/add/" class="qa-card">
+  <a href="{% url 'manage:event_edit' %}" class="qa-card">
     <div class="qa-icon">&#128197;</div>
     <div><div class="qa-text">New Event</div><div class="qa-desc">Add a community event</div></div>
+  </a>
+  <a href="{% url 'manage:business_edit' %}" class="qa-card">
+    <div class="qa-icon">&#127970;</div>
+    <div><div class="qa-text">Add Business</div><div class="qa-desc">Shop, service, freelancer</div></div>
   </a>
 </div>
 

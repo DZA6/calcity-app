@@ -335,3 +335,207 @@ def events_list(request):
 
     ctx = {"events": page, "current_status": status}
     return render(request, "manage/events_list.html", ctx)
+
+
+@staff_member_required
+def event_edit(request, pk=None):
+    """Create or edit an event."""
+    event = None
+    if pk:
+        event = get_object_or_404(Event, pk=pk)
+
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        description = request.POST.get("description", "").strip()
+        location = request.POST.get("location", "").strip()
+        category = request.POST.get("category", "community")
+        start_date = request.POST.get("start_date", "")
+        end_date = request.POST.get("end_date", "")
+        is_approved = request.POST.get("is_approved") == "on"
+
+        if not title or not start_date:
+            ctx = {"event": event, "categories": Event.CATEGORY_CHOICES, "error": "Title and start date are required."}
+            if event:
+                ctx["preview_image_url"] = event.image.url if event.image else None
+            return render(request, "manage/event_edit.html", ctx)
+
+        try:
+            from django.utils.dateparse import parse_datetime
+            start_dt = parse_datetime(start_date)
+            end_dt = parse_datetime(end_date) if end_date else None
+        except Exception:
+            start_dt = None
+            end_dt = None
+
+        if not start_dt:
+            ctx = {"event": event, "categories": Event.CATEGORY_CHOICES, "error": "Invalid start date."}
+            return render(request, "manage/event_edit.html", ctx)
+
+        if event:
+            event.title = title
+            event.description = description
+            event.location = location
+            event.category = category
+            event.start_date = start_dt
+            event.end_date = end_dt
+            event.is_approved = is_approved
+        else:
+            event = Event(
+                title=title, description=description, location=location,
+                category=category, start_date=start_dt, end_date=end_dt,
+                is_approved=is_approved,
+            )
+
+        if request.FILES.get("image"):
+            event.image = request.FILES["image"]
+
+        event.save()
+        return redirect("manage:events_list")
+
+    ctx = {"event": event, "categories": Event.CATEGORY_CHOICES}
+    if event and event.image:
+        ctx["preview_image_url"] = event.image.url
+    return render(request, "manage/event_edit.html", ctx)
+
+
+@staff_member_required
+def event_delete(request, pk):
+    """Delete an event."""
+    event = get_object_or_404(Event, pk=pk)
+    if request.method == "POST":
+        event.delete()
+        return redirect("manage:events_list")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": event, "type_name": "Event",
+        "cancel_url": reverse("manage:events_list"),
+    })
+
+
+@staff_member_required
+def event_toggle(request, pk):
+    """AJAX: toggle event approval."""
+    event = get_object_or_404(Event, pk=pk)
+    event.is_approved = not event.is_approved
+    event.save()
+    return JsonResponse({"ok": True, "is_approved": event.is_approved})
+
+
+# ── Businesses ──────────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def businesses_list(request):
+    """List all businesses with filters."""
+    category = request.GET.get("category", "")
+    status = request.GET.get("status", "all")
+    page_num = request.GET.get("page", 1)
+
+    qs = Business.objects.all()
+    if category:
+        qs = qs.filter(category=category)
+    if status == "approved":
+        qs = qs.filter(is_approved=True)
+    elif status == "pending":
+        qs = qs.filter(is_approved=False)
+
+    paginator = Paginator(qs.order_by("name"), 30)
+    page = paginator.get_page(page_num)
+
+    ctx = {
+        "businesses": page,
+        "categories": Business.CATEGORY_CHOICES,
+        "current_category": category,
+        "current_status": status,
+    }
+    return render(request, "manage/businesses_list.html", ctx)
+
+
+@staff_member_required
+def business_edit(request, pk=None):
+    """Create or edit a business."""
+    biz = None
+    if pk:
+        biz = get_object_or_404(Business, pk=pk)
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip()
+        category = request.POST.get("category", "local_shop")
+        contact_phone = request.POST.get("contact_phone", "").strip()
+        contact_email = request.POST.get("contact_email", "").strip()
+        website = request.POST.get("website", "").strip()
+        address = request.POST.get("address", "").strip()
+        is_home_based = request.POST.get("is_home_based") == "on"
+        is_featured = request.POST.get("is_featured") == "on"
+        is_approved = request.POST.get("is_approved") == "on"
+
+        if not name:
+            ctx = _biz_form_context(biz)
+            ctx["error"] = "Business name is required."
+            return render(request, "manage/business_edit.html", ctx)
+
+        if biz:
+            biz.name = name
+            biz.description = description
+            biz.category = category
+            biz.contact_phone = contact_phone
+            biz.contact_email = contact_email
+            biz.website = website
+            biz.address = address
+            biz.is_home_based = is_home_based
+            biz.is_featured = is_featured
+            biz.is_approved = is_approved
+        else:
+            biz = Business(
+                name=name, description=description, category=category,
+                contact_phone=contact_phone, contact_email=contact_email,
+                website=website, address=address,
+                is_home_based=is_home_based, is_featured=is_featured,
+                is_approved=is_approved,
+            )
+
+        if request.FILES.get("image"):
+            biz.image = request.FILES["image"]
+
+        biz.save()
+        return redirect("manage:businesses_list")
+
+    ctx = _biz_form_context(biz)
+    return render(request, "manage/business_edit.html", ctx)
+
+
+def _biz_form_context(biz):
+    ctx = {"biz": biz, "categories": Business.CATEGORY_CHOICES}
+    if biz and biz.image:
+        ctx["preview_image_url"] = biz.image.url
+    return ctx
+
+
+@staff_member_required
+def business_delete(request, pk):
+    """Delete a business."""
+    biz = get_object_or_404(Business, pk=pk)
+    if request.method == "POST":
+        biz.delete()
+        return redirect("manage:businesses_list")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": biz, "type_name": "Business",
+        "cancel_url": reverse("manage:businesses_list"),
+    })
+
+
+@staff_member_required
+def business_toggle(request, pk, field):
+    """AJAX: toggle is_approved, is_featured, or is_home_based."""
+    biz = get_object_or_404(Business, pk=pk)
+    if field == "approve":
+        biz.is_approved = not biz.is_approved
+    elif field == "feature":
+        biz.is_featured = not biz.is_featured
+    elif field == "home":
+        biz.is_home_based = not biz.is_home_based
+    biz.save()
+    return JsonResponse({
+        "ok": True, "is_approved": biz.is_approved,
+        "is_featured": biz.is_featured, "is_home_based": biz.is_home_based,
+    })

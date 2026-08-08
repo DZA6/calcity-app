@@ -398,6 +398,7 @@ select { cursor: pointer; }
     <a href="{% url 'manage:weather' %}" class="{% if request.resolver_match.url_name == 'weather' %}active{% endif %}">Weather</a>
     <a href="{% url 'manage:alerts' %}" class="{% if 'alert' in request.resolver_match.url_name %}active{% endif %}">Alerts</a>
     <a href="{% url 'manage:events_list' %}" class="{% if 'events' in request.resolver_match.url_name %}active{% endif %}">Events</a>
+    <a href="{% url 'manage:businesses_list' %}" class="{% if 'business' in request.resolver_match.url_name %}active{% endif %}">Businesses</a>
   </nav>
   <span class="user-info">{{ user.username }}</span>
 </header>

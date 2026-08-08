@@ -1,0 +1,103 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if biz %}Edit Business{% else %}New Business{% endif %} — CalCity Manage{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{% url 'manage:businesses_list' %}" style="color:var(--text-light);text-decoration:none;font-size:1.2rem;">&larr;</a>
+  <h1 class="page-title" style="margin-bottom:0;">{% if biz %}Edit {{ biz.name }}{% else %}New Business{% endif %}</h1>
+</div>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card">
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="form-group">
+    <label>Business Name <span style="color:var(--danger);">*</span></label>
+    <input type="text" name="name" value="{{ biz.name|default:'' }}" placeholder="e.g. CalCity Plumbing" required maxlength="200">
+  </div>
+
+  <div class="form-group">
+    <label>Category</label>
+    <select name="category">
+      {% for val, label in categories %}
+      <option value="{{ val }}" {% if biz.category == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Description</label>
+    <textarea name="description" placeholder="What does this business do?">{{ biz.description|default:'' }}</textarea>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="form-group">
+      <label>Phone</label>
+      <input type="text" name="contact_phone" value="{{ biz.contact_phone|default:'' }}" placeholder="(760) 555-0123">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="text" name="contact_email" value="{{ biz.contact_email|default:'' }}" placeholder="hello@example.com">
+    </div>
+    <div class="form-group">
+      <label>Website</label>
+      <input type="url" name="website" value="{{ biz.website|default:'' }}" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label>Address</label>
+      <input type="text" name="address" value="{{ biz.address|default:'' }}" placeholder="123 Main St, California City">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Logo / Photo</label>
+    <label class="file-input">
+      <input type="file" name="image" accept="image/jpeg,image/png,image/webp" onchange="previewFile(this, 'img-preview')">
+      <div class="upload-hint">&#128247; Upload a logo or storefront photo</div>
+    </label>
+    {% if preview_image_url %}
+    <div class="preview-box" id="img-preview"><img src="{{ preview_image_url }}" alt="Preview"></div>
+    {% else %}
+    <div class="preview-box" id="img-preview" style="display:none;"></div>
+    {% endif %}
+  </div>
+
+  <div style="display:flex;gap:32px;flex-wrap:wrap;">
+    <div class="checkbox-row">
+      <input type="checkbox" name="is_home_based" id="id_home" {% if biz.is_home_based %}checked{% endif %}>
+      <label for="id_home">Home-based business</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" name="is_featured" id="id_featured" {% if biz.is_featured %}checked{% endif %}>
+      <label for="id_featured">Featured — show prominently</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" name="is_approved" id="id_approved" {% if biz.is_approved %}checked{% endif %}>
+      <label for="id_approved">Approved — visible in app</label>
+    </div>
+  </div>
+
+  <div class="btn-group" style="margin-top:24px;">
+    <button type="submit" class="btn btn-primary">{% if biz %}Save Changes{% else %}Add Business{% endif %}</button>
+    <a href="{% url 'manage:businesses_list' %}" class="btn btn-outline">Cancel</a>
+    {% if biz %}
+    <a href="{% url 'manage:business_delete' biz.pk %}" class="btn btn-danger" style="margin-left:auto;">Delete</a>
+    {% endif %}
+  </div>
+</form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewFile(input, pid) {
+  const p = document.getElementById(pid);
+  const f = input.files[0];
+  if (!f) { p.style.display='none'; p.innerHTML=''; return; }
+  p.style.display='flex';
+  p.innerHTML = f.type.startsWith('image/') ? '<img src="'+URL.createObjectURL(f)+'" alt="Preview">' : '';
+}
+</script>
+{% endblock %}

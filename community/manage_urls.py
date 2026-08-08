@@ -29,4 +29,15 @@ urlpatterns = [
 
     # Events
     path("events/", views.events_list, name="events_list"),
+    path("events/new/", views.event_edit, name="event_edit"),
+    path("events/<int:pk>/", views.event_edit, name="event_edit"),
+    path("events/<int:pk>/delete/", views.event_delete, name="event_delete"),
+    path("events/<int:pk>/toggle/", views.event_toggle, name="event_toggle"),
+
+    # Businesses
+    path("businesses/", views.businesses_list, name="businesses_list"),
+    path("businesses/new/", views.business_edit, name="business_edit"),
+    path("businesses/<int:pk>/", views.business_edit, name="business_edit"),
+    path("businesses/<int:pk>/delete/", views.business_delete, name="business_delete"),
+    path("businesses/<int:pk>/toggle/<str:field>/", views.business_toggle, name="business_toggle"),
 ]
