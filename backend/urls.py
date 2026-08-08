@@ -18,12 +18,41 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include, path
 
+
+def api_root(request):
+    """Health check + API index."""
+    return JsonResponse({
+        "app": "CalCity API",
+        "version": "1.0",
+        "endpoints": {
+            "news": "/api/news/",
+            "events": "/api/events/",
+            "businesses": "/api/businesses/",
+            "schools": "/api/schools/",
+            "alerts": "/api/alerts/",
+            "council_agendas": "/api/council-agendas/",
+            "weather": "/api/weather/",
+            "tips": "/api/tips/",
+            "admin": "/admin/",
+        },
+        "docs": "API-only backend — no browser UI at /",
+    })
+
+
 urlpatterns = [
+    path("", api_root, name="api-root"),
     path("admin/", admin.site.urls),
     path("api/", include("community.urls")),
 ]
 
+# Serve media files in production (PA static mappings handle /static/)
+# Use django.views.static.serve as a reliable fallback
 if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # Production fallback — PA nginx /static/ mappings intercept first,
+    # but /media/ needs Django to serve it
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
