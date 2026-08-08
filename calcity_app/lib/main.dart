@@ -5,6 +5,7 @@ import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
 import 'services/ad_service.dart';
 import 'services/api_service.dart';
+import 'services/push_service.dart';
 import 'models/content.dart';
 import 'screens/home_screen.dart';
 import 'screens/businesses_screen.dart';
@@ -23,6 +24,8 @@ void main() async {
   } catch (_) {
     // Ads unavailable on this platform
   }
+  // Push notifications (no-op until Firebase is configured)
+  await PushService().initialize();
   runApp(const CalCityApp());
 }
 
