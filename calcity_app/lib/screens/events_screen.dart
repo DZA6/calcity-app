@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/content_provider.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/event_card.dart';
 import '../widgets/category_chip.dart';
 import 'detail_screen.dart';
@@ -35,31 +36,10 @@ class _EventsScreenState extends State<EventsScreen> {
           }
 
           if (provider.events.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 64,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No events available',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Pull down to refresh',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
+            return const EmptyStateWidget(
+              icon: Icons.event_busy,
+              title: 'No upcoming events',
+              subtitle: 'Community events will appear here.\nKnow of something happening?',
             );
           }
 

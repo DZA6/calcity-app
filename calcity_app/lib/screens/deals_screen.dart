@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/content_provider.dart';
+import '../widgets/empty_state.dart';
 
 class DealsScreen extends StatelessWidget {
   const DealsScreen({super.key});
@@ -14,17 +15,10 @@ class DealsScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(title: const Text('Local Deals')),
           body: deals.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.local_offer_outlined, size: 56, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
-                      const SizedBox(height: 12),
-                      Text('No deals yet', style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant)),
-                      const SizedBox(height: 4),
-                      Text('Local businesses will post deals here soon.', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant.withValues(alpha: 0.5))),
-                    ],
-                  ),
+              ? const EmptyStateWidget(
+                  icon: Icons.local_offer_outlined,
+                  title: 'No deals yet',
+                  subtitle: 'Local businesses will post deals here soon.',
                 )
               : ListView.separated(
                   padding: const EdgeInsets.all(14),

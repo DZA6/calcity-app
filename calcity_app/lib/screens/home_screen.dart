@@ -442,7 +442,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     final cs = Theme.of(context).colorScheme;
     final name = placement['business_name'] ?? 'Local Business';
     final headline = placement['headline'] ?? 'Featured';
-    final imageUrl = placement['business_image'];
 
     return Container(
       decoration: BoxDecoration(

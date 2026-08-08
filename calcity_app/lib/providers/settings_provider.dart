@@ -12,7 +12,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _keyShowAlerts = 'show_alerts';
   static const _keyShowCouncil = 'show_council';
 
-  bool _darkMode = true; // dark by default
+  bool _darkMode = false; // light by default
   bool _notifications = true;
   bool _showNews = true;
   bool _showEvents = true;
@@ -36,7 +36,7 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _darkMode = prefs.getBool(_keyDarkMode) ?? true;
+    _darkMode = prefs.getBool(_keyDarkMode) ?? false;
     _notifications = prefs.getBool(_keyNotifications) ?? true;
     _showNews = prefs.getBool(_keyShowNews) ?? true;
     _showEvents = prefs.getBool(_keyShowEvents) ?? true;
