@@ -121,7 +121,8 @@ class LoginView(APIView):
                 {"error": "Too many login attempts. Please wait a few minutes."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
-        serializer = LoginSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data,
+                                      context={"request": request})
         if not serializer.is_valid():
             error = list(serializer.errors.values())[0]
             msg = error[0] if isinstance(error, list) else str(error)

@@ -111,7 +111,9 @@ class LoginSerializer(serializers.Serializer):
                 "Check your inbox for the verification link."
             )
 
-        user = authenticate(username=u.username, password=password)
+        # Pass request so AxesStandaloneBackend can track IPs
+        request = self.context.get("request")
+        user = authenticate(request=request, username=u.username, password=password)
         if user is None:
             raise serializers.ValidationError("Invalid username/email or password.")
 
