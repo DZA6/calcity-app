@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.generics import CreateAPIView
+from rest_framework.pagination import PageNumberPagination
 
 from .models import Alert, Business, CommunityTip, CouncilAgenda, Event, NewsItem, School, WeatherInfo
 from .serializers import (
@@ -19,6 +20,7 @@ class NewsItemViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = NewsItem.objects.filter(is_approved=True)
     serializer_class = NewsItemSerializer
+    pagination_class = None
     ordering = ["-created_at"]
 
 
@@ -27,6 +29,7 @@ class EventViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = Event.objects.filter(is_approved=True)
     serializer_class = EventSerializer
+    pagination_class = None
     ordering = ["start_date"]
 
 
@@ -35,6 +38,7 @@ class BusinessViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = Business.objects.filter(is_approved=True)
     serializer_class = BusinessSerializer
+    pagination_class = None
     ordering = ["name"]
 
 
@@ -50,6 +54,7 @@ class AlertViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = Alert.objects.filter(is_active=True)
     serializer_class = AlertSerializer
+    pagination_class = None
     ordering = ["-created_at"]
 
 
@@ -58,6 +63,7 @@ class CouncilAgendaViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = CouncilAgenda.objects.filter(is_approved=True)
     serializer_class = CouncilAgendaSerializer
+    pagination_class = None
     ordering = ["-meeting_date"]
 
 
@@ -65,6 +71,7 @@ class CategoryNewsViewSet(viewsets.ReadOnlyModelViewSet):
     """News filtered by category slug: /api/news/?category=church or /api/category/church/."""
 
     serializer_class = NewsItemSerializer
+    pagination_class = None
     ordering = ["-created_at"]
 
     def get_queryset(self):
@@ -80,6 +87,7 @@ class SchoolViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = School.objects.filter(is_approved=True)
     serializer_class = SchoolSerializer
+    pagination_class = None
     ordering = ["type", "name"]
 
 
@@ -88,4 +96,5 @@ class WeatherInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = WeatherInfo.objects.filter(is_active=True)[:1]
     serializer_class = WeatherInfoSerializer
+    pagination_class = None
     ordering = ["-created_at"]
