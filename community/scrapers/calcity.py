@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from .base import BaseScraper
+from community.models import Business
 
 logger = logging.getLogger("scrapers.calcity")
 
@@ -22,6 +23,90 @@ GRANICUS_RSS = (
 )
 HOME_URL = "https://www.californiacity-ca.gov/CC/"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+BUSINESS_DIRECTORY_URL = (
+    "https://www.californiacity-ca.gov/CC/index.php/business/business-directory"
+)
+
+# City business-directory category text -> CalCity app category.
+# The directory table's 4th column is a free-text description of the
+# business license type (e.g. "Retail", "Professional Service").
+CITY_CATEGORY_MAP = {
+    "professional service": "service",
+    "retail": "local_shop",
+    "restaurant/supply": "restaurant",
+    "home based business": "home_business",
+    "handyman services": "service",
+    "real estate": "service",
+    "service organization": "other",
+    "internet sales/service": "home_business",
+    "landlord": "service",
+    "cultivation cannabis": "other",
+    "cannabis distribution": "other",
+    "general contractor": "service",
+    "cleaning services": "service",
+    "medical services": "service",
+    "hair & nail salon": "service",
+    "ministry": "other",
+    "vending": "home_business",
+    "novelty gifts": "local_shop",
+    "aircraft/aviation": "other",
+    "cannabis delivery": "other",
+    "gardener": "service",
+    "landscape contractor": "service",
+    "transportation": "service",
+    "auto repair": "service",
+    "cannabis mfg": "other",
+    "mobile vending/food/catering": "restaurant",
+    "gym/fitness center": "service",
+    "concrete sales & del": "local_shop",
+    "storage facility": "service",
+    "bank": "service",
+    "auto parts store": "local_shop",
+    "convenient store/gas": "local_shop",
+    "laundromat": "service",
+    "youth/sports activity": "other",
+    "cannabis storefront": "other",
+    "purified water sales": "local_shop",
+    "grocery store": "local_shop",
+    "donut/bakery": "restaurant",
+    "home improvement services": "service",
+    "towing": "service",
+    "massage services": "service",
+    "hardware store": "local_shop",
+    "auto sales": "local_shop",
+    "auto supply store": "local_shop",
+    "recreation services": "other",
+    "hotel": "service",
+    "locksmith": "service",
+    "garden supply": "local_shop",
+    "solar": "service",
+    "newspaper/media": "other",
+    "electrical services": "service",
+    "carpet care/cleaning": "service",
+    "educational services": "service",
+    "dental services": "service",
+    "recycling services": "service",
+    "property management": "service",
+    "barber services": "service",
+    "pet breeder": "other",
+    "recycling/trash service": "service",
+    "metal fabrication": "other",
+    "day care services": "service",
+    "party and supply rentals": "service",
+    "plumbing contractor": "service",
+    "heating & air conditioning": "service",
+    "photography services": "freelancer",
+    "rv park": "service",
+    "painting": "service",
+    "food pantry": "other",
+    "flooring": "service",
+    "tire store/garage": "local_shop",
+    "construction": "other",
+    "wireless communication": "service",
+    "firearms sales": "local_shop",
+    "pest control": "service",
+    "veterinarian/animal care": "service",
+}
 
 # OSM → CalCity category mapping
 OSM_CATEGORY_MAP = {
@@ -82,12 +167,96 @@ class CalCityScraper(BaseScraper):
             stats["errors"] += 1
 
         try:
-            stats["businesses"] = self._scrape_businesses_osm()
+            stats["businesses"] = self._scrape_business_directory()
+        except Exception as e:
+            logger.error("CalCity business directory failed: %s", e)
+            stats["errors"] += 1
+
+        try:
+            stats["businesses"] += self._scrape_businesses_osm()
         except Exception as e:
             logger.error("CalCity OSM businesses failed: %s", e)
             stats["errors"] += 1
 
         return stats
+
+    # ------------------------------------------------------------------
+    # Businesses from the City's official business directory
+    # ------------------------------------------------------------------
+
+    def _scrape_business_directory(self) -> int:
+        """
+        Parse the City of California City business-directory page. It is a
+        server-rendered Joomla article containing a table of every licensed
+        business: Account# | (blank) | Business | Business Phone # | Description.
+
+        The Description column is the license category text (e.g. "Retail",
+        "Professional Service") — mapped to app categories via CITY_CATEGORY_MAP.
+        Upserts: if a business with the same name already exists (e.g. from the
+        OSM source), its missing phone/description are filled in instead of
+        creating a duplicate.
+        """
+        import html as html_mod
+
+        body = self.fetch_page(BUSINESS_DIRECTORY_URL)
+        if not body:
+            return 0
+
+        def clean(cell: str) -> str:
+            txt = re.sub(r"<[^>]+>", "", cell)
+            txt = html_mod.unescape(txt).replace("&nbsp;", " ")
+            return " ".join(txt.split())
+
+        saved = 0
+        updated = 0
+        seen = set()
+
+        for row in re.findall(r"<tr>(.*?)</tr>", body, re.S):
+            cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+            if len(cells) < 5:
+                continue
+            acct, _, name, phone, desc = [clean(c) for c in cells[:5]]
+            if not name or name == "Business":
+                continue
+            key = name.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+
+            category = CITY_CATEGORY_MAP.get(desc.lower().strip(), "other")
+            description = (
+                f"Licensed business in California City, CA "
+                f"(license type: {desc or 'General'})."
+            )
+
+            existing = Business.objects.filter(name__iexact=name).first()
+            if existing:
+                changed = False
+                if phone and not existing.contact_phone:
+                    existing.contact_phone = phone[:20]
+                    changed = True
+                if not existing.description:
+                    existing.description = description
+                    changed = True
+                if changed:
+                    existing.save()
+                    updated += 1
+                continue
+
+            item = self.save_business(
+                name=name,
+                description=description,
+                category=category,
+                phone=phone,
+            )
+            if item:
+                saved += 1
+
+        logger.info(
+            "CalCity business directory: %d saved, %d updated",
+            saved, updated,
+        )
+        return saved
 
     # ------------------------------------------------------------------
     # Businesses from OpenStreetMap
