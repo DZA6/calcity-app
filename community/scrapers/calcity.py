@@ -27,6 +27,9 @@ OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 BUSINESS_DIRECTORY_URL = (
     "https://www.californiacity-ca.gov/CC/index.php/business/business-directory"
 )
+CITY_CALENDAR_LIST_URL = (
+    "https://www.californiacity-ca.gov/CC/index.php/cityconnection2/city-calendar?view=list"
+)
 
 # City business-directory category text -> CalCity app category.
 # The directory table's 4th column is a free-text description of the
@@ -162,6 +165,12 @@ class CalCityScraper(BaseScraper):
             stats["errors"] += 1
 
         try:
+            stats["events"] = self._scrape_city_calendar()
+        except Exception as e:
+            logger.error("CalCity city calendar failed: %s", e)
+            stats["errors"] += 1
+
+        try:
             stats["news"] = self._scrape_desert_news()
         except Exception as e:
             logger.error("CalCity news failed: %s", e)
@@ -263,6 +272,72 @@ class CalCityScraper(BaseScraper):
             "CalCity business directory: %d saved, %d updated",
             saved, updated,
         )
+        return saved
+
+    # ------------------------------------------------------------------
+    # Events from the City's DPCalendar (via jina reader proxy)
+    # ------------------------------------------------------------------
+
+    def _scrape_city_calendar(self) -> int:
+        """
+        Parse the City of California City calendar (Joomla DPCalendar).
+
+        The calendar view is JS-rendered, so it is fetched through the
+        r.jina.ai reader proxy, which returns markdown. The list view has a
+        regular shape:
+
+            ## [City Council Meeting](https://.../city-council-meeting-...)
+            08.11.2026  Monthly on the 2nd Tuesday ... [Agenda](...)[Zoom](...)
+
+        Title -> Event.category: "city" for council meetings (6 PM, City
+        Hall), "community" for everything else (ceremonies, celebrations).
+        Titles carry the date so recurring meetings deduplicate correctly.
+        """
+        body = self.fetch_page(f"https://r.jina.ai/{CITY_CALENDAR_LIST_URL}")
+        if not body:
+            return 0
+
+        saved = 0
+        pattern = re.compile(
+            r"## \[([^\]]+)\]\(([^)]+)\)\s*\n\s*(\d{2})\.(\d{2})\.(\d{4})",
+        )
+        for m in pattern.finditer(body):
+            title = m.group(1).strip()
+            url = m.group(2).strip()
+            # US date format: MM.DD.YYYY (08.11.2026 = Aug 11, 2026)
+            mm, dd, yyyy = m.group(3), m.group(4), m.group(5)
+
+            if not title or title.lower() == "city calendar":
+                continue
+
+            try:
+                meeting_date = datetime(int(yyyy), int(mm), int(dd))
+            except ValueError:
+                continue
+
+            is_council = "council" in title.lower()
+            category = "city" if is_council else "community"
+            location = "City Hall, California City, CA" if is_council else ""
+            hour = 18 if is_council else 12
+            meeting_date = meeting_date.replace(hour=hour)
+
+            full_title = f"{title} — {meeting_date:%b %d, %Y}"
+            description = (
+                f"Posted on the City of California City calendar. "
+                f"Details: {url}"
+            )
+
+            item = self.save_event(
+                title=full_title,
+                description=description,
+                location=location,
+                start_date=meeting_date,
+                category=category,
+            )
+            if item:
+                saved += 1
+
+        logger.info("CalCity city calendar: %d events saved", saved)
         return saved
 
     # ------------------------------------------------------------------

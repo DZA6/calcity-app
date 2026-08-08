@@ -15,6 +15,7 @@ from community.scrapers.calcity import CalCityScraper
 from community.scrapers.kerncounty import KernCountyScraper
 from community.scrapers.bakersfield import BakersfieldScraper
 from community.scrapers.lancaster import LancasterScraper
+from community.scrapers.schools import MojaveUSDScraper
 
 logger = logging.getLogger("scrapers")
 
@@ -25,6 +26,7 @@ SCRAPERS = {
     "kerncounty": KernCountyScraper,
     "bakersfield": BakersfieldScraper,
     "lancaster": LancasterScraper,
+    "schools": MojaveUSDScraper,
 }
 
 

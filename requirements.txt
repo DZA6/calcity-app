@@ -9,3 +9,4 @@ python-dotenv>=1.0
 trafilatura>=2.0
 sentry-sdk>=2.0
 firebase-admin>=6.0
+pypdf>=5.0

@@ -199,6 +199,14 @@ class School(models.Model):
     address = models.CharField(max_length=300, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     website = models.URLField(blank=True)
+    calendar_url = models.URLField(
+        blank=True,
+        help_text="Link to the school/district calendar (page, PDF, or image)",
+    )
+    bell_schedule_url = models.URLField(
+        blank=True,
+        help_text="Link to the school bell schedule document (PDF/DOCX)",
+    )
     description = models.TextField(blank=True)
     is_approved = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
