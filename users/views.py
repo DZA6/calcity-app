@@ -106,11 +106,21 @@ class VerifyEmailView(APIView):
 
 
 class LoginView(APIView):
-    """Log in with username/email and password. Returns auth token."""
+    """Log in with username/email and password. Returns auth token.
+
+    Rate-limited to 10 attempts per 15 minutes per IP to slow brute force
+    (django-axes provides the harder lockout on top).
+    """
 
     permission_classes = [AllowAny]
 
+    @method_decorator(ratelimit(key="ip", rate="10/15m", method="POST", block=False))
     def post(self, request):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many login attempts. Please wait a few minutes."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             error = list(serializer.errors.values())[0]

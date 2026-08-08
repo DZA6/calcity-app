@@ -5,6 +5,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 
 from .models import Alert, Business, CommunityTip, CouncilAgenda, Deal, Event, FeaturedPlacement, NewsItem, School, WeatherInfo
 from .serializers import (
@@ -49,10 +51,20 @@ class BusinessViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class TipCreateView(CreateAPIView):
-    """Public submission endpoint — no auth required."""
+    """Public submission endpoint — no auth required, rate-limited to
+    10 submissions per hour per IP to stop spam flooding the queue."""
 
     queryset = CommunityTip.objects.all()
     serializer_class = CommunityTipSerializer
+
+    @method_decorator(ratelimit(key="ip", rate="10/h", method="POST", block=False))
+    def post(self, request, *args, **kwargs):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many submissions. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        return super().post(request, *args, **kwargs)
 
 
 class AlertViewSet(viewsets.ReadOnlyModelViewSet):
@@ -107,10 +119,20 @@ class WeatherInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RegisterView(CreateAPIView):
-    """Create a new user account. Returns an auth token."""
+    """Create a new user account. Returns an auth token.
+    NOTE: legacy endpoint used by the current Flutter app. Rate-limited
+    to 3 registrations per hour per IP (mirrors /api/auth/register/).
+    Prefer /api/auth/register/ (email-verified flow) for new clients.
+    """
     permission_classes = [AllowAny]
 
+    @method_decorator(ratelimit(key="ip", rate="3/h", method="POST", block=False))
     def create(self, request, *args, **kwargs):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many registration attempts. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         from django.contrib.auth.models import User
         username = request.data.get("username", "").strip()
         email = request.data.get("email", "").strip()

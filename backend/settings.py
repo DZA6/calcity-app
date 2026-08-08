@@ -7,6 +7,7 @@ from environment variables (WSGI file on PA), with dev-only fallbacks.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
+    "axes",
     # Local
     "community",
     "users",
@@ -63,6 +65,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "axes.middleware.AxesMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -120,6 +123,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+# ── django-axes (brute-force lockout) ───────────────────────────────
+# Locks an IP out after 5 failed logins for 15 minutes (applies to the
+# Django admin, /manage/, and the API login endpoints via AxesStandaloneBackend).
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]
+AXES_VERBOSE = False
 
 # ── DRF ────────────────────────────────────────────────────────────
 
