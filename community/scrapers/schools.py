@@ -179,6 +179,9 @@ class MojaveUSDScraper(BaseScraper):
             website = "https://www.mojave.k12.ca.us" + info["page"].split(".k12.ca.us")[1]
 
             changed = False
+            if not school.is_approved:
+                school.is_approved = True  # authoritative district data
+                changed = True
             if bell and school.bell_schedule_url != bell:
                 school.bell_schedule_url = bell[:200]
                 changed = True
