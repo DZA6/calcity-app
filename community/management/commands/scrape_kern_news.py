@@ -47,6 +47,21 @@ FEEDS = [
         "url": "https://news.google.com/rss/search?q=california+city+ca&hl=en-US&gl=US&ceid=US:en",
         "category": "general",
     },
+    {
+        "name": "Bakersfield",
+        "url": "https://news.google.com/rss/search?q=bakersfield+california+news&hl=en-US&gl=US&ceid=US:en",
+        "category": "general",
+    },
+    {
+        "name": "Lancaster-Palmdale",
+        "url": "https://news.google.com/rss/search?q=lancaster+palmdale+california+news&hl=en-US&gl=US&ceid=US:en",
+        "category": "general",
+    },
+    {
+        "name": "Mojave",
+        "url": "https://news.google.com/rss/search?q=mojave+california+news&hl=en-US&gl=US&ceid=US:en",
+        "category": "general",
+    },
 ]
 
 # Category keywords → map articles to the right section
