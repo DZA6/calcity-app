@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import 'providers/content_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/ad_service.dart';
+import 'services/api_service.dart';
+import 'models/content.dart';
 import 'screens/home_screen.dart';
 import 'screens/businesses_screen.dart';
+import 'screens/freelancers_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/category_screen.dart';
 
@@ -291,9 +294,16 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-/// Explore screen — category grid
-class ExploreScreen extends StatelessWidget {
+/// Explore screen — category grid + event calendar
+class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
+  @override
+  State<ExploreScreen> createState() => _ExploreScreenState();
+}
+
+class _ExploreScreenState extends State<ExploreScreen> {
+  List<EventItem> _events = [];
+  bool _loaded = false;
 
   static const _categories = <Map<String, dynamic>>[
     {'slug': 'city_works', 'label': 'City Works', 'icon': Icons.engineering_outlined, 'color': Color(0xFF5F6B41)},
@@ -307,68 +317,196 @@ class ExploreScreen extends StatelessWidget {
     {'slug': 'community', 'label': 'Community', 'icon': Icons.celebration_outlined, 'color': Color(0xFF9B5E3A)},
   ];
 
+  static final _categoryColors = <String, Color>{
+    'community': const Color(0xFF5B9BD5),
+    'school': const Color(0xFFE8A838),
+    'sports': const Color(0xFF28A745),
+    'city': const Color(0xFFC67B5C),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    final events = await ApiService().fetchEvents();
+    if (mounted) setState(() { _events = events; _loaded = true; });
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Explore')),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.0,
-        ),
-        itemCount: _categories.length,
-        itemBuilder: (ctx, i) {
-          final cat = _categories[i];
-          final color = cat['color'] as Color;
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(ctx, MaterialPageRoute(
-                builder: (_) => CategoryScreen(
-                  category: cat['slug'] as String,
-                  title: cat['label'] as String,
-                ),
-              ));
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.0,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 44, height: 44,
+              itemCount: _categories.length + 1,
+              itemBuilder: (ctx, i) {
+                // Last item = Freelancers button
+                if (i == _categories.length) {
+                  return GestureDetector(
+                    onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                      builder: (_) => const FreelancersScreen(),
+                    )),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: cs.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 44, height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.person_outline, color: Colors.blue, size: 22),
+                          ),
+                          const SizedBox(height: 10),
+                          Text('Freelancers', textAlign: TextAlign.center, style: TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w500, color: cs.onSurface, height: 1.2,
+                          ), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final cat = _categories[i];
+                final color = cat['color'] as Color;
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(ctx, MaterialPageRoute(
+                      builder: (_) => CategoryScreen(
+                        category: cat['slug'] as String,
+                        title: cat['label'] as String,
+                      ),
+                    ));
+                  },
+                  child: Container(
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
                     ),
-                    child: Icon(cat['icon'] as IconData, color: color, size: 22),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    cat['label'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: cs.onSurface,
-                      height: 1.2,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(cat['icon'] as IconData, color: color, size: 22),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(cat['label'] as String, textAlign: TextAlign.center, style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w500, color: cs.onSurface, height: 1.2,
+                        ), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+
+            // Event Calendar
+            if (_loaded && _events.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(children: [
+                  const Icon(Icons.calendar_month, size: 20),
+                  const SizedBox(width: 8),
+                  Text('Events', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  const Spacer(),
+                  Text('${_events.length} upcoming', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _events.length,
+                  itemBuilder: (ctx, i) {
+                    final event = _events[i];
+                    final catColor = _categoryColors[event.category] ?? cs.primary;
+                    return Container(
+                      width: 80,
+                      margin: const EdgeInsets.only(right: 10),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 56, height: 56,
+                            decoration: BoxDecoration(
+                              color: cs.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  event.startDate != null
+                                      ? '${event.startDate!.day}'
+                                      : '?',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface),
+                                ),
+                                Text(
+                                  event.startDate != null
+                                      ? _monthAbbr(event.startDate!.month)
+                                      : '',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: cs.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          // Color-coded dot
+                          Container(
+                            width: 8, height: 8,
+                            decoration: BoxDecoration(
+                              color: catColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _monthAbbr(int month) {
+    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month];
   }
 }
