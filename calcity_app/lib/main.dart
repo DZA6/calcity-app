@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'services/ad_service.dart';
 import 'services/api_service.dart';
 import 'services/push_service.dart';
+import 'widgets/ad_banner.dart';
 import 'models/content.dart';
 import 'screens/home_screen.dart';
 import 'screens/businesses_screen.dart';
@@ -18,7 +19,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await AdService().initialize();
-    AdService().loadBannerAd();
+    AdService().ensureBanner();
+    AdService().preloadInterstitial();
   } catch (_) {
     // Ads unavailable on this platform
   }
@@ -257,6 +259,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
+  int _tabSwitches = 0;
 
   static const _screens = <Widget>[
     HomeScreen(),
@@ -266,6 +269,17 @@ class _MainShellState extends State<MainShell> {
     DealsScreen(),
   ];
 
+  void _onDestinationSelected(int i) {
+    if (i == _selectedIndex) return;
+    setState(() => _selectedIndex = i);
+
+    // Interstitial every 3rd tab switch (AdService enforces a cooldown too)
+    _tabSwitches++;
+    if (_tabSwitches % 3 == 0) {
+      AdService().showInterstitialIfReady();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -273,34 +287,41 @@ class _MainShellState extends State<MainShell> {
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Explore',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.store_outlined),
-            selectedIcon: Icon(Icons.store),
-            label: 'Businesses',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.campaign_outlined),
-            selectedIcon: Icon(Icons.campaign),
-            label: 'Alerts',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.local_offer_outlined),
-            selectedIcon: Icon(Icons.local_offer),
-            label: 'Deals',
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Banner ad above the nav bar — visible on all tabs
+          const AdBanner(),
+          NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onDestinationSelected,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.explore_outlined),
+                selectedIcon: Icon(Icons.explore),
+                label: 'Explore',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.store_outlined),
+                selectedIcon: Icon(Icons.store),
+                label: 'Businesses',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.campaign_outlined),
+                selectedIcon: Icon(Icons.campaign),
+                label: 'Alerts',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.local_offer_outlined),
+                selectedIcon: Icon(Icons.local_offer),
+                label: 'Deals',
+              ),
+            ],
           ),
         ],
       ),

@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required in ALL builds (debug manifest only adds it for debug):
+         API calls and AdMob ads need network access in release APKs too. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="calcity_app"
+        android:label="Cal City"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
