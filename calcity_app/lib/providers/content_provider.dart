@@ -12,10 +12,12 @@ class ContentProvider extends ChangeNotifier {
   List<CouncilAgendaItem> _councilAgendas = [];
   WeatherInfo? _weather;
   bool _isLoading = false;
+  bool _isInitialized = false;
   bool _isLoadingAlerts = false;
   bool _isLoadingCouncil = false;
   String? _error;
 
+  // ---- public read getters (no allocation per call) ----
   List<NewsItem> get news => _news;
   List<EventItem> get events => _events;
   List<BusinessItem> get businesses => _businesses;
@@ -25,127 +27,104 @@ class ContentProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoadingAlerts => _isLoadingAlerts;
   bool get isLoadingCouncil => _isLoadingCouncil;
+  bool get isInitialized => _isInitialized;
   String? get error => _error;
 
-  List<AlertItem> get activeAlerts => _alerts.where((a) => a.isActive).toList();
-  List<NewsItem> get featuredNews => _news.where((n) => n.featured).toList();
-  List<BusinessItem> get featuredBusinesses =>
-      _businesses.where((b) => b.isFeatured).toList();
+  // ---- cached derived getters (only recomputed when source lists change) ----
+  late List<AlertItem> _cachedActiveAlerts;
+  late List<NewsItem> _cachedFeaturedNews;
+  late List<BusinessItem> _cachedFeaturedBusinesses;
 
-  /// News filtered by a specific category slug, e.g. 'church'.
+  List<AlertItem> get activeAlerts => _cachedActiveAlerts;
+  List<NewsItem> get featuredNews => _cachedFeaturedNews;
+  List<BusinessItem> get featuredBusinesses => _cachedFeaturedBusinesses;
+
+  void _rebuildCaches() {
+    _cachedActiveAlerts = _alerts.where((a) => a.isActive).toList();
+    _cachedFeaturedNews = _news.where((n) => n.featured).toList();
+    _cachedFeaturedBusinesses = _businesses.where((b) => b.isFeatured).toList();
+  }
+
+  ContentProvider() {
+    _rebuildCaches();
+  }
+
   List<NewsItem> newsByCategory(String category) =>
       _news.where((n) => n.category == category).toList();
 
+  // ---- single-shot refresh: all fetches in parallel, one notify at end ----
   Future<void> refreshAll() async {
     _isLoading = true;
     _error = null;
-    notifyListeners();
+    notifyListeners(); // ONE notify: show spinner
 
-    await Future.wait([
-      refreshNews(silent: true),
-      refreshEvents(silent: true),
-      refreshBusinesses(silent: true),
-      fetchAlerts(),
-      fetchCouncilAgendas(),
-      fetchWeather(),
+    final results = await Future.wait([
+      _api.fetchNews(),
+      _api.fetchEvents(),
+      _api.fetchBusinesses(),
+      _api.fetchAlerts(),
+      _api.fetchCouncilAgendas(),
+      _api.fetchWeather(),
     ]);
 
+    _news = (results[0] as List<NewsItem>?) ?? _news;
+    _events = (results[1] as List<EventItem>?) ?? _events;
+    _businesses = (results[2] as List<BusinessItem>?) ?? _businesses;
+    _alerts = (results[3] as List<AlertItem>?) ?? _alerts;
+    _councilAgendas = (results[4] as List<CouncilAgendaItem>?) ?? _councilAgendas;
+    if (results[5] is WeatherInfo) _weather = results[5] as WeatherInfo?;
+
+    _rebuildCaches();
     _isLoading = false;
-    notifyListeners();
+    _isInitialized = true;
+    notifyListeners(); // ONE notify: data ready
   }
 
-  Future<void> refreshNews({bool silent = false}) async {
-    if (!silent) {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-    }
-    try {
-      _news = await _api.fetchNews();
-    } catch (e) {
-      _error = 'Failed to load news';
-    }
-    if (!silent) {
-      _isLoading = false;
-      notifyListeners();
-    } else {
-      notifyListeners();
-    }
-  }
-
-  Future<void> refreshEvents({bool silent = false}) async {
-    if (!silent) {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-    }
-    try {
-      _events = await _api.fetchEvents();
-    } catch (e) {
-      _error = 'Failed to load events';
-    }
-    if (!silent) {
-      _isLoading = false;
-      notifyListeners();
-    } else {
-      notifyListeners();
-    }
-  }
-
-  Future<void> refreshBusinesses({bool silent = false}) async {
-    if (!silent) {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-    }
-    try {
-      _businesses = await _api.fetchBusinesses();
-    } catch (e) {
-      _error = 'Failed to load businesses';
-    }
-    if (!silent) {
-      _isLoading = false;
-      notifyListeners();
-    } else {
-      notifyListeners();
-    }
-  }
-
+  // ---- individual refreshes (for dedicated screens) ----
   Future<void> fetchAlerts() async {
     _isLoadingAlerts = true;
+    notifyListeners();
     try {
       _alerts = await _api.fetchAlerts();
-    } catch (e) {
+      _rebuildCaches();
+    } catch (_) {
       _error = 'Failed to load alerts';
     }
     _isLoadingAlerts = false;
     notifyListeners();
   }
 
+  Future<void> refreshNews() async {
+    try { _news = await _api.fetchNews(); _rebuildCaches(); } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> refreshEvents() async {
+    try { _events = await _api.fetchEvents(); } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> refreshBusinesses() async {
+    try { _businesses = await _api.fetchBusinesses(); _rebuildCaches(); } catch (_) {}
+    notifyListeners();
+  }
+
   Future<void> fetchCouncilAgendas() async {
     _isLoadingCouncil = true;
+    notifyListeners();
     try {
       _councilAgendas = await _api.fetchCouncilAgendas();
-    } catch (e) {
+    } catch (_) {
       _error = 'Failed to load council agendas';
     }
     _isLoadingCouncil = false;
     notifyListeners();
   }
 
-  Future<void> fetchWeather() async {
-    try {
-      _weather = await _api.fetchWeather();
-      notifyListeners();
-    } catch (e) {
-      // Weather is non-blocking; silence errors
-    }
-  }
-
   Future<List<NewsItem>> fetchNewsByCategory(String category) async {
     try {
       return await _api.fetchCategoryNews(category);
-    } catch (e) {
+    } catch (_) {
       return [];
     }
   }

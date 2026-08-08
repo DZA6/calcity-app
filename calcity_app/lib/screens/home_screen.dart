@@ -15,154 +15,84 @@ import 'council_screen.dart';
 import 'category_screen.dart';
 import 'detail_screen.dart';
 
-/// Category definitions for the hamburger drawer.
-const _drawerCategories = <_DrawerEntry>[
-  _DrawerEntry('City Works', 'city_works', Icons.engineering_outlined, Color(0xFF5F6B41)),
-  _DrawerEntry('Church / Faith', 'church', Icons.church_outlined, Color(0xFF8B5A3C)),
-  _DrawerEntry('Recreation & Parks', 'recreation', Icons.park_outlined, Color(0xFF4A7C59)),
-  _DrawerEntry('Law Enforcement', 'law_enforcement', Icons.local_police_outlined, Color(0xFF3A4B6D)),
-  _DrawerEntry('Health & Wellness', 'health', Icons.health_and_safety_outlined, Color(0xFF4D8C7A)),
-  _DrawerEntry('Schools & Education', 'education', Icons.school_outlined, Color(0xFF6B5B95)),
-  _DrawerEntry('Business & Economy', 'business', Icons.store_outlined, Color(0xFFB8573E)),
-  _DrawerEntry('Traffic & Roads', 'traffic', Icons.traffic_outlined, Color(0xFF8B6B3A)),
-  _DrawerEntry('Community Events', 'community', Icons.celebration_outlined, Color(0xFF9B5E3A)),
-];
-
+/// Drawer categories with emoji-enhanced labels.
 class _DrawerEntry {
   final String label;
+  final String emoji;
   final String slug;
   final IconData icon;
   final Color color;
-  const _DrawerEntry(this.label, this.slug, this.icon, this.color);
+  const _DrawerEntry(this.label, this.emoji, this.slug, this.icon, this.color);
 }
+
+const _drawerCategories = <_DrawerEntry>[
+  _DrawerEntry('City Works', '🏗️', 'city_works', Icons.engineering_outlined, Color(0xFF5F6B41)),
+  _DrawerEntry('Church / Faith', '⛪', 'church', Icons.church_outlined, Color(0xFF8B5A3C)),
+  _DrawerEntry('Recreation & Parks', '🌳', 'recreation', Icons.park_outlined, Color(0xFF4A7C59)),
+  _DrawerEntry('Law Enforcement', '🚔', 'law_enforcement', Icons.local_police_outlined, Color(0xFF3A4B6D)),
+  _DrawerEntry('Health & Wellness', '🏥', 'health', Icons.health_and_safety_outlined, Color(0xFF4D8C7A)),
+  _DrawerEntry('Schools & Education', '🎓', 'education', Icons.school_outlined, Color(0xFF6B5B95)),
+  _DrawerEntry('Business & Economy', '💼', 'business', Icons.store_outlined, Color(0xFFB8573E)),
+  _DrawerEntry('Traffic & Roads', '🚧', 'traffic', Icons.traffic_outlined, Color(0xFF8B6B3A)),
+  _DrawerEntry('Community Events', '🎉', 'community', Icons.celebration_outlined, Color(0xFF9B5E3A)),
+];
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ContentProvider>().refreshAll();
+      final provider = context.read<ContentProvider>();
+      if (!provider.isInitialized) provider.refreshAll();
     });
   }
 
+  void _push(Widget screen) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+
+  // ---- build ----
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cal City'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<ContentProvider>().refreshAll(),
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
+      appBar: _appBar(context),
       drawer: _buildDrawer(context),
       body: Consumer<ContentProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading && provider.news.isEmpty) {
+        builder: (context, prov, _) {
+          if (prov.isLoading && prov.news.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
           return RefreshIndicator(
-            onRefresh: () => provider.refreshAll(),
+            onRefresh: () => prov.refreshAll(),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 40),
               children: [
-                // Weather card
-                _buildWeatherCard(context, provider),
-                const SizedBox(height: 16),
-                // Alert banners
-                if (provider.activeAlerts.isNotEmpty) ...[
-                  _buildAlertBanner(context, provider),
-                  const SizedBox(height: 16),
+                _weatherCard(context, prov),
+                const SizedBox(height: 12),
+                if (prov.activeAlerts.isNotEmpty) ...[
+                  _alertBanner(context, prov.activeAlerts.first),
+                  const SizedBox(height: 12),
                 ],
-                // Quick category chips
-                _buildCategoryChips(context),
+                _categoryChipsCompact(context),
+                const SizedBox(height: 16),
+                _sectionNews(context, prov),
                 const SizedBox(height: 20),
-                // Featured News
-                _buildSectionHeader(context, 'Latest News', Icons.article_outlined,
-                    provider.news.length,
-                    onSeeAll: () => _push(context, const NewsScreen())),
-                const SizedBox(height: 10),
-                if (provider.news.isNotEmpty)
-                  SizedBox(
-                    height: 290,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: provider.news.length.clamp(0, 10),
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, i) => SizedBox(
-                        width: 260,
-                        child: NewsCard(
-                          item: provider.news[i],
-                          onTap: () => _openDetail(context, provider.news[i]),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  _emptyState(Icons.article_outlined, 'No news yet'),
-                const SizedBox(height: 24),
-                // Events
-                _buildSectionHeader(context, 'Upcoming Events', Icons.event_outlined,
-                    provider.events.length,
-                    onSeeAll: () => _push(context, const EventsScreen())),
-                const SizedBox(height: 10),
-                ...provider.events.take(3).map((e) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: EventCard(
-                        item: e,
-                        onTap: () => _openEventDetail(context, e),
-                      ),
-                    )),
-                if (provider.events.isEmpty) _emptyState(Icons.event_outlined, 'No events yet'),
-                const SizedBox(height: 24),
-                // Businesses
-                _buildSectionHeader(context, 'Local Businesses', Icons.store_outlined,
-                    provider.featuredBusinesses.length,
-                    onSeeAll: () => _push(context, const BusinessesScreen())),
-                const SizedBox(height: 10),
-                if (provider.featuredBusinesses.isNotEmpty)
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.85,
-                    ),
-                    itemCount: provider.featuredBusinesses.length,
-                    itemBuilder: (_, i) => BusinessCard(
-                      item: provider.featuredBusinesses[i],
-                      onTap: () => _openBusinessDetail(context, provider.featuredBusinesses[i]),
-                    ),
-                  )
-                else
-                  _emptyState(Icons.store_outlined, 'No businesses yet'),
-                const SizedBox(height: 24),
-                // Council
-                _buildSectionHeader(context, 'City Council', Icons.groups_outlined,
-                    provider.councilAgendas.length,
-                    onSeeAll: () => _push(context, const CouncilScreen())),
-                if (provider.councilAgendas.isNotEmpty)
-                  ...provider.councilAgendas.take(4).map((a) => _councilTile(context, a)),
-                // Footer
-                const SizedBox(height: 40),
-                Center(
-                  child: Text(
-                    'California City, CA',
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
-                  ),
-                ),
+                _sectionEvents(context, prov),
+                const SizedBox(height: 20),
+                _sectionBusinesses(context, prov),
+                const SizedBox(height: 20),
+                _sectionCouncil(context, prov),
+                const SizedBox(height: 32),
+                _footer(context),
               ],
             ),
           );
@@ -171,305 +101,337 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _push(BuildContext context, Widget screen) =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  // ---- app bar ----
+  PreferredSizeWidget _appBar(BuildContext context) => AppBar(
+    title: const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('🌵 Cal City'),
+        SizedBox(width: 6),
+        Text('📍', style: TextStyle(fontSize: 18)),
+      ],
+    ),
+    actions: [
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: () => context.read<ContentProvider>().refreshAll(),
+        tooltip: 'Refresh',
+      ),
+    ],
+  );
 
-  void _openDetail(BuildContext context, dynamic item) {
-    if (item is! NewsItem) return;
-    Navigator.push(context, MaterialPageRoute(builder: (_) => DetailScreen(
-      title: item.title,
-      itemType: 'news',
-      content: item.content,
-      metadata: {
-        'date': item.createdAt.toIso8601String(),
-        if (item.sourceUrl != null) 'source_url': item.sourceUrl!,
-        if (item.imageUrl != null) 'image_url': item.imageUrl!,
-        if (item.videoUrl != null) 'video_url': item.videoUrl!,
-      },
-    )));
-  }
-
-  void _openEventDetail(BuildContext context, EventItem e) =>
-      _push(context, DetailScreen(title: e.title, itemType: 'event',
-          content: e.description ?? '', metadata: {
-        if (e.startDate != null) 'start_date': e.startDate!.toIso8601String(),
-        if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
-        if (e.location != null) 'location': e.location!,
-        if (e.imageUrl != null) 'image_url': e.imageUrl!,
-      }));
-
-  void _openBusinessDetail(BuildContext context, BusinessItem b) =>
-      _push(context, DetailScreen(title: b.name, itemType: 'business',
-          content: b.description ?? '', metadata: {
-        if (b.category != null) 'category': b.category!,
-        if (b.imageUrl != null) 'image_url': b.imageUrl!,
-        if (b.contactPhone != null) 'phone': b.contactPhone!,
-        if (b.contactEmail != null) 'email': b.contactEmail!,
-        if (b.website != null) 'website': b.website!,
-      }));
-
-  // ---- Drawer ----
-  Widget _buildDrawer(BuildContext context) {
-    final theme = Theme.of(context);
+  // ---- drawer ----
+  Widget _buildDrawer(BuildContext ctx) {
+    final theme = Theme.of(ctx);
     return Drawer(
       child: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+        child: Column(children: [
+          _drawerHeader(theme),
+          _drawerWeather(theme),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              children: [
+                ..._drawerCategories.map((cat) => ListTile(
+                  leading: Text(cat.emoji, style: const TextStyle(fontSize: 20)),
+                  title: Text(cat.label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _push(CategoryScreen(category: cat.slug, title: '${cat.emoji} ${cat.label}'));
+                  },
+                )),
+                const Divider(indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Text('🏛️', style: TextStyle(fontSize: 20)),
+                  title: const Text('City Council', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                  onTap: () { Navigator.pop(ctx); _push(const CouncilScreen()); },
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.location_city, color: Colors.white.withValues(alpha: 0.9), size: 32),
-                  const SizedBox(height: 12),
-                  const Text('California City',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 4),
-                  Text('Community Hub',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
-                ],
-              ),
+                ListTile(
+                  leading: const Text('🚨', style: TextStyle(fontSize: 20)),
+                  title: const Text('Alerts', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                  onTap: () { Navigator.pop(ctx); _push(const AlertsScreen()); },
+                ),
+                ListTile(
+                  leading: const Text('💡', style: TextStyle(fontSize: 20)),
+                  title: const Text('Submit a Tip', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                  onTap: () { Navigator.pop(ctx); _push(const TipScreen()); },
+                ),
+              ],
             ),
-            // Weather summary in drawer
-            Consumer<ContentProvider>(
-              builder: (context, provider, _) {
-                final w = provider.weather;
-                if (w == null) return const SizedBox.shrink();
-                return Container(
-                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.wb_sunny_outlined, color: Colors.amber.shade700, size: 28),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${w.temperatureHigh ?? '—'}°F / ${w.temperatureLow ?? '—'}°F',
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-                            Text(w.headline, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            // Category menu items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                children: [
-                  ..._drawerCategories.map((cat) => ListTile(
-                    leading: Icon(cat.icon, color: cat.color, size: 22),
-                    title: Text(cat.label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                    trailing: const Icon(Icons.chevron_right, size: 18),
-                    onTap: () {
-                      Navigator.pop(context); // close drawer
-                      _push(context, CategoryScreen(category: cat.slug, title: cat.label));
-                    },
-                  )),
-                  const Divider(indent: 16, endIndent: 16),
-                  ListTile(
-                    leading: Icon(Icons.groups_outlined, color: theme.colorScheme.primary, size: 22),
-                    title: const Text('City Council', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                    onTap: () { Navigator.pop(context); _push(context, const CouncilScreen()); },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.campaign_outlined, color: Colors.red.shade600, size: 22),
-                    title: const Text('Alerts', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                    onTap: () { Navigator.pop(context); _push(context, const AlertsScreen()); },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.edit_note_outlined, color: theme.colorScheme.primary, size: 22),
-                    title: const Text('Submit a Tip', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                    onTap: () { Navigator.pop(context); _push(context, const TipScreen()); },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
 
-  // ---- Home screen widgets ----
+  Widget _drawerHeader(ThemeData theme) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+      ),
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('🌵', style: TextStyle(fontSize: 28)),
+      const SizedBox(height: 8),
+      const Text('California City', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 2),
+      Text('🏜️ Community Hub', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
+    ]),
+  );
 
-  Widget _buildWeatherCard(BuildContext context, ContentProvider provider) {
-    final theme = Theme.of(context);
-    final w = provider.weather;
+  Widget _drawerWeather(ThemeData theme) =>
+    Consumer<ContentProvider>(builder: (_, prov, __) {
+      final w = prov.weather;
+      if (w == null) return const SizedBox.shrink();
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        child: Row(children: [
+          Icon(Icons.wb_sunny_outlined, color: Colors.amber.shade700, size: 26),
+          const SizedBox(width: 10),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${w.temperatureHigh ?? '—'}° / ${w.temperatureLow ?? '—'}°',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            Text(w.headline, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
+          ]),
+        ]),
+      );
+    });
+
+  // ---- weather card ----
+  Widget _weatherCard(BuildContext ctx, ContentProvider prov) {
+    final w = prov.weather;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          colors: [const Color(0xFF1565C0), const Color(0xFF1565C0).withValues(alpha: 0.8)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF1565C0).withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
       ),
       child: w == null
-          ? _weatherPlaceholder()
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber.shade300, size: 40),
-                    const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${w.temperatureHigh ?? '—'}°F / ${w.temperatureLow ?? '—'}°F',
-                          style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w700, height: 1.1)),
-                        Text(w.headline, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    _weatherStat(Icons.water_drop_outlined, w.humidity ?? ''),
-                    const SizedBox(width: 16),
-                    _weatherStat(Icons.air, w.wind ?? ''),
-                    const SizedBox(width: 16),
-                    if (w.fireRisk != null && w.fireRisk!.isNotEmpty)
-                      _weatherStat(Icons.local_fire_department_outlined, w.fireRisk!),
-                  ],
-                ),
-              ],
-            ),
+        ? const Row(children: [
+            Text('☀️', style: TextStyle(fontSize: 36)),
+            SizedBox(width: 12),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Weather', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600)),
+              Text('Update coming soon', style: TextStyle(color: Colors.white54, fontSize: 13)),
+            ]),
+          ])
+        : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(w.temperatureHigh != null && w.temperatureHigh! > 90 ? '🥵' : '☀️', style: const TextStyle(fontSize: 36)),
+              const SizedBox(width: 12),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${w.temperatureHigh ?? '—'}°F / ${w.temperatureLow ?? '—'}°F',
+                  style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700, height: 1.1)),
+                Text(w.headline, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 14)),
+              ]),
+            ]),
+            const SizedBox(height: 14),
+            Row(children: [
+              if (w.humidity != null && w.humidity!.isNotEmpty)
+                _weatherStat('💧', w.humidity!),
+              const SizedBox(width: 14),
+              if (w.wind != null && w.wind!.isNotEmpty)
+                _weatherStat('💨', w.wind!),
+              const SizedBox(width: 14),
+              if (w.fireRisk != null && w.fireRisk!.isNotEmpty)
+                _weatherStat('🔥', w.fireRisk!),
+            ]),
+          ]),
     );
   }
 
-  Widget _weatherPlaceholder() {
-    return const Row(
-      children: [
-        Icon(Icons.wb_sunny, color: Colors.white54, size: 40),
-        SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Weather', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w600)),
-            Text('Update coming soon', style: TextStyle(color: Colors.white54, fontSize: 14)),
-          ],
-        ),
-      ],
-    );
-  }
+  Widget _weatherStat(String icon, String val) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Text(icon, style: const TextStyle(fontSize: 14)),
+    const SizedBox(width: 4),
+    Text(val, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12)),
+  ]);
 
-  Widget _weatherStat(IconData icon, String value) {
-    if (value.isEmpty) return const SizedBox.shrink();
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 14),
-        const SizedBox(width: 4),
-        Text(value, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget _buildAlertBanner(BuildContext context, ContentProvider provider) {
-    final topAlert = provider.activeAlerts.first;
-    final severity = topAlert.severity.toLowerCase();
-    final color = severity == 'emergency' ? Colors.red.shade800
-        : severity == 'warning' ? Colors.amber.shade800
+  // ---- alert banner ----
+  Widget _alertBanner(BuildContext ctx, AlertItem alert) {
+    final sev = alert.severity.toLowerCase();
+    final color = sev == 'emergency' ? Colors.red.shade800
+        : sev == 'warning' ? Colors.orange.shade800
         : Colors.blue.shade800;
-
+    final emoji = sev == 'emergency' ? '🚨' : sev == 'warning' ? '⚠️' : 'ℹ️';
     return GestureDetector(
-      onTap: () => _push(context, const AlertsScreen()),
+      onTap: () => _push(const AlertsScreen()),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
         child: Row(children: [
-          Icon(Icons.campaign, color: Colors.white, size: 20),
-          const SizedBox(width: 10),
-          Expanded(child: Text(topAlert.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(alert.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14))),
           const Icon(Icons.chevron_right, color: Colors.white, size: 18),
         ]),
       ),
     );
   }
 
-  Widget _buildCategoryChips(BuildContext context) {
-    final theme = Theme.of(context);
-    final cats = _drawerCategories.take(6).toList();
-    return Wrap(
-      spacing: 8, runSpacing: 8,
-      children: cats
-          .map((c) => ActionChip(
-                avatar: Icon(c.icon, color: c.color, size: 16),
-                label: Text(c.label, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface)),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                onPressed: () => _push(context, CategoryScreen(category: c.slug, title: c.label)),
-              ))
-          .toList(),
-    );
-  }
+  // ---- category chips (compact, emoji) ----
+  Widget _categoryChipsCompact(BuildContext ctx) => Wrap(
+    spacing: 6, runSpacing: 6,
+    children: _drawerCategories.take(6).map((c) => ActionChip(
+      avatar: Text(c.emoji, style: const TextStyle(fontSize: 16)),
+      label: Text(c.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+      visualDensity: VisualDensity.compact,
+      side: BorderSide(color: Theme.of(ctx).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+      onPressed: () => _push(CategoryScreen(category: c.slug, title: '${c.emoji} ${c.label}')),
+    )).toList(),
+  );
 
-  Widget _buildSectionHeader(BuildContext context, String title, IconData icon, int count, {VoidCallback? onSeeAll}) {
-    return Row(children: [
-      Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
-      const SizedBox(width: 8),
-      Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-      const SizedBox(width: 8),
-      Text('($count)', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline)),
-      const Spacer(),
-      if (onSeeAll != null)
-        TextButton(onPressed: onSeeAll, child: const Text('See all', style: TextStyle(fontWeight: FontWeight.w600))),
+  // ---- section headers (const-able) ----
+  Widget _sectionHeader(String emojiLabel, int count, {VoidCallback? onSeeAll}) => Row(children: [
+    Text(emojiLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+    const SizedBox(width: 6),
+    Text('$count', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
+    const Spacer(),
+    if (onSeeAll != null)
+      TextButton(onPressed: onSeeAll, child: const Text('See all →', style: TextStyle(fontWeight: FontWeight.w600))),
+  ]);
+
+  // ---- news section ----
+  Widget _sectionNews(BuildContext ctx, ContentProvider prov) {
+    if (prov.news.isEmpty) return _empty('📰', 'No news yet — check back soon!');
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionHeader('📰 Latest News', prov.news.length, onSeeAll: () => _push(const NewsScreen())),
+      const SizedBox(height: 8),
+      SizedBox(
+        height: 280,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: prov.news.length.clamp(0, 10),
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) => SizedBox(
+            width: 250,
+            child: NewsCard(item: prov.news[i], onTap: () => _openNews(ctx, prov.news[i])),
+          ),
+        ),
+      ),
     ]);
   }
 
-  Widget _emptyState(IconData icon, String msg) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: Column(children: [
-          Icon(icon, color: Theme.of(context).colorScheme.outline, size: 36),
-          const SizedBox(height: 8),
-          Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.outline)),
-        ]),
+  // ---- events section ----
+  Widget _sectionEvents(BuildContext ctx, ContentProvider prov) {
+    if (prov.events.isEmpty) return _empty('📅', 'No upcoming events');
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionHeader('📅 Upcoming Events', prov.events.length, onSeeAll: () => _push(const EventsScreen())),
+      const SizedBox(height: 6),
+      ...prov.events.take(3).map((e) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: EventCard(item: e, onTap: () => _openEvent(ctx, e)),
+      )),
+    ]);
+  }
+
+  // ---- businesses section ----
+  Widget _sectionBusinesses(BuildContext ctx, ContentProvider prov) {
+    if (prov.businesses.isEmpty) return _empty('🏪', 'No businesses yet');
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionHeader('🏪 Local Businesses', prov.businesses.length, onSeeAll: () => _push(const BusinessesScreen())),
+      const SizedBox(height: 6),
+      RepaintBoundary(
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 0.82,
+          ),
+          itemCount: prov.businesses.length.clamp(0, 8),
+          itemBuilder: (_, i) => BusinessCard(item: prov.businesses[i], onTap: () => _openBusiness(ctx, prov.businesses[i])),
+        ),
+      ),
+    ]);
+  }
+
+  // ---- council section ----
+  Widget _sectionCouncil(BuildContext ctx, ContentProvider prov) {
+    if (prov.councilAgendas.isEmpty) return _empty('🏛️', 'No council meetings');
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionHeader('🏛️ City Council', prov.councilAgendas.length, onSeeAll: () => _push(const CouncilScreen())),
+      const SizedBox(height: 6),
+      ...prov.councilAgendas.take(4).map((a) => _councilRow(ctx, a)),
+    ]);
+  }
+
+  Widget _councilRow(BuildContext ctx, council) {
+    final theme = Theme.of(ctx);
+    final date = council.meetingDate != null
+        ? DateFormat('MMM d').format(council.meetingDate!)
+        : 'TBD';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: ListTile(
+        leading: Icon(Icons.calendar_today, color: theme.colorScheme.primary, size: 22),
+        title: Text(council.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+        trailing: Chip(label: Text(date, style: const TextStyle(fontSize: 10)), visualDensity: VisualDensity.compact),
+        onTap: () => _push(DetailScreen(
+          title: council.title, itemType: 'council',
+          content: council.description ?? '',
+          metadata: {'pdf_url': council.pdfUrl ?? '', 'meeting_date': council.meetingDate?.toIso8601String() ?? ''},
+        )),
       ),
     );
   }
 
-  Widget _councilTile(BuildContext context, council) {
-    final theme = Theme.of(context);
-    String date = 'TBD';
-    if (council.meetingDate != null) date = DateFormat('MMM d').format(council.meetingDate!);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(Icons.calendar_today, color: theme.colorScheme.primary),
-        title: Text(council.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
-        trailing: Chip(label: Text(date, style: const TextStyle(fontSize: 11)), visualDensity: VisualDensity.compact),
-        onTap: () {
-          _push(context, DetailScreen(
-            title: council.title, itemType: 'council',
-            content: council.description ?? '',
-            metadata: {'pdf_url': council.pdfUrl ?? '', 'meeting_date': council.meetingDate?.toIso8601String() ?? ''},
-          ));
-        },
-      ),
-    );
+  Widget _empty(String emoji, String msg) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 20),
+    child: Center(child: Column(children: [
+      Text(emoji, style: const TextStyle(fontSize: 32)),
+      const SizedBox(height: 6),
+      Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 13)),
+    ])),
+  );
+
+  Widget _footer(BuildContext ctx) => Center(child: Text('📍 California City, CA 93505 🏜️',
+    style: TextStyle(fontSize: 11, color: Theme.of(ctx).colorScheme.outline)));
+
+  // ---- navigation helpers ----
+  void _openNews(BuildContext ctx, dynamic item) {
+    if (item is! NewsItem) return;
+    _push(DetailScreen(title: item.title, itemType: 'news', content: item.content, metadata: {
+      if (item.imageUrl != null) 'image_url': item.imageUrl!,
+      if (item.videoUrl != null) 'video_url': item.videoUrl!,
+      if (item.sourceUrl != null) 'source_url': item.sourceUrl!,
+    }));
   }
+
+  void _openEvent(BuildContext ctx, EventItem e) =>
+    _push(DetailScreen(title: e.title, itemType: 'event', content: e.description ?? '', metadata: {
+      if (e.startDate != null) 'start_date': e.startDate!.toIso8601String(),
+      if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
+      if (e.location != null) 'location': e.location!,
+      if (e.imageUrl != null) 'image_url': e.imageUrl!,
+    }));
+
+  void _openBusiness(BuildContext ctx, BusinessItem b) =>
+    _push(DetailScreen(title: b.name, itemType: 'business', content: b.description ?? '', metadata: {
+      if (b.category != null) 'category': b.category!,
+      if (b.contactPhone != null) 'phone': b.contactPhone!,
+      if (b.contactEmail != null) 'email': b.contactEmail!,
+      if (b.website != null) 'website': b.website!,
+      if (b.address != null) 'address': b.address!,
+      if (b.imageUrl != null) 'image_url': b.imageUrl!,
+    }));
 }
