@@ -4,12 +4,15 @@ import 'package:intl/intl.dart';
 import '../models/content.dart';
 import '../providers/content_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/news_card.dart';
 import '../widgets/event_card.dart';
 import '../widgets/business_card.dart';
 import 'detail_screen.dart';
 import 'settings_screen.dart';
 import 'schools_screen.dart';
+import 'login_screen.dart';
+import 'signup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
