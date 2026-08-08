@@ -1,0 +1,99 @@
+CALCITY TOOL SETUP GUIDE (2026-08-08)
+======================================
+
+Everything is coded and deployed. These are the steps only YOU can do
+(they need your Google account / accounts). Copy-paste friendly.
+
+
+1) FIREBASE PUSH NOTIFICATIONS (backend done, waiting on you)
+--------------------------------------------------------------
+The app now has a "Send Push" button on the manage panel
+(/manage/alerts/ -> any alert -> "Send Push"). It currently returns
+"FCM not configured" — expected, until you do this:
+
+STEP 1 — Create the Firebase project
+  a) Go to https://console.firebase.google.com
+  b) Click "Add project", name it  CalCity
+  c) Google Analytics: you can skip it (toggle off) — not needed
+  d) Click Create
+
+STEP 2 — Register the Android app
+  a) On the project overview page, click the Android icon
+     (it looks like a little robot)
+  b) Package name (EXACT):  com.calcity.calcity_app
+  c) Click "Register app"
+  d) It offers google-services.json — click "Download google-services.json"
+  e) Put that file at this exact location on your machine:
+        /home/rig/calcity-app/calcity_app/android/app/google-services.json
+  f) Click Next through the remaining steps (the build.gradle lines it
+     shows are already handled by flutterfire — do NOT hand-edit them)
+
+STEP 3 — Generate the service account (for the backend sender)
+  a) In Firebase console: click the gear icon (top-left) -> Project settings
+  b) Go to the "Service accounts" tab
+  c) Click "Generate new private key" -> it downloads a JSON file
+  d) Upload it to PythonAnywhere. From your machine's terminal:
+        scp -i ~/.ssh/pythonanywhere /path/to/downloaded-firebase-key.json \
+            MMSantelopevalley@ssh.pythonanywhere.com:/home/MMSantelopevalley/calcity-app/firebase-service-account.json
+     (or upload it via the PA Files tab to  /home/MMSantelopevalley/calcity-app/)
+
+STEP 4 — Tell the backend where it is (one line, on PA)
+  a) PA Web tab -> your web app -> WSGI configuration file
+  b) Find the line:  os.environ["CALCITY_SSL_REDIRECT"] = "True"
+  c) Add BELOW it:
+        os.environ["FIREBASE_SERVICE_ACCOUNT_PATH"] = "/home/MMSantelopevalley/calcity-app/firebase-service-account.json"
+  d) Save, then click the green "Reload" button
+
+STEP 5 — Wire up the app build (one command, on your machine)
+  a) Install the flutterfire CLI (one time):
+        dart pub global activate flutterfire_cli
+  b) From /home/rig/calcity-app/calcity_app, run:
+        flutterfire configure --project=calcity --android-package-name=com.calcity.calcity_app
+     (it will ask which platforms: choose android; it generates
+      lib/firebase_options.dart and updates android/ gradle files)
+  c) Rebuild the APK as you normally do (flutter build apk --release)
+  d) Distribute the new APK via GitHub Releases as usual
+
+TEST: install the new APK on your phone -> allow notifications when
+asked -> in the manage panel click "Send Push" on any alert -> your
+phone should buzz within a few seconds. (Phone needs Google Play
+services — normal Android phones have it.)
+
+
+2) SENTRY ERROR TRACKING (plumbing done, needs your DSN)
+--------------------------------------------------------
+Backend already sends errors to Sentry automatically — but only when a
+DSN is configured. To enable:
+  a) Go to https://sentry.io, sign up (free tier)
+  b) Create a project: Platform "Django", name "calcity"
+  c) It shows a DSN like:
+        https://abc123@o456789.ingest.sentry.io/4500000001
+  d) PA Web tab -> WSGI file -> add below the FIREBASE line:
+        os.environ["SENTRY_DSN"] = "https://PASTE-YOUR-DSN-HERE"
+  e) Save + Reload
+You'll then get an email for every 500/crash the app throws.
+
+
+3) UPTIMEROBOT (external, 5 minutes, no code)
+---------------------------------------------
+  a) Go to https://uptimerobot.com, sign up free
+  b) Add New Monitor:
+     Monitor Type:  HTTP(S)
+     URL:           https://calcityapp-MMSantelopevalley.pythonanywhere.com/api/health/
+     Interval:      5 minutes (free tier allows this)
+     Alert Contacts: your email
+  c) Create. You'll get an email the moment the site ever goes down.
+
+
+4) DONE ITEMS (no action needed — already deployed)
+---------------------------------------------------
+  - Business directory: 255 city-licensed businesses live (names, phones,
+    categories) + OSM enrichment for addresses/websites (additive only)
+  - DesertNews scraper FIXED (was matching 0 articles — TownNews URLs)
+    + real article text via trafilatura
+  - Login rate limit (10/15min per IP) + tip submission (10/h)
+    + register (3/h)
+  - django-axes: IP locked out after 5 failed logins for 15 min
+  - HTTPS redirect: http:// now 301-redirects to https://
+  - Sentry plumbing (inactive until step 2)
+  - FCM backend + Flutter code (inactive until step 1)
