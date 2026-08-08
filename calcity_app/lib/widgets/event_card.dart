@@ -17,23 +17,18 @@ class EventCard extends StatelessWidget {
 
     // Category colors
     Color categoryColor;
-    IconData categoryIcon;
     switch (item.category) {
       case 'school':
         categoryColor = Colors.blue;
-        categoryIcon = Icons.school;
         break;
       case 'sports':
         categoryColor = Colors.green;
-        categoryIcon = Icons.sports_soccer;
         break;
       case 'city':
         categoryColor = Colors.purple;
-        categoryIcon = Icons.location_city;
         break;
       default:
         categoryColor = colorScheme.primary;
-        categoryIcon = Icons.people;
     }
 
     return GestureDetector(

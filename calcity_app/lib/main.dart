@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/content_provider.dart';
+import 'providers/settings_provider.dart';
 import 'services/ad_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/businesses_screen.dart';
+import 'screens/alerts_screen.dart';
+import 'screens/category_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,20 +25,125 @@ class CalCityApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ContentProvider(),
-      child: MaterialApp(
-        title: 'Cal City',
-        debugShowCheckedModeBanner: false,
-        theme: _buildLightTheme(),
-        darkTheme: _buildDarkTheme(),
-        themeMode: ThemeMode.system,
-        home: const HomeScreen(),
+      create: (_) => SettingsProvider()..load(),
+      builder: (context, _) {
+        final settings = context.watch<SettingsProvider>();
+        return ChangeNotifierProvider(
+          create: (_) => ContentProvider(),
+          child: MaterialApp(
+            title: 'Cal City',
+            debugShowCheckedModeBanner: false,
+            theme: _buildLightTheme(),
+            darkTheme: _buildDarkTheme(),
+            themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
+            home: const MainShell(),
+          ),
+        );
+      },
+    );
+  }
+
+  // ---- Dark theme (default) ----
+  ThemeData _buildDarkTheme() {
+    const cs = ColorScheme(
+      brightness: Brightness.dark,
+      primary: Color(0xFFB8573E),
+      onPrimary: Color(0xFFFFFFFF),
+      primaryContainer: Color(0xFF8B3A26),
+      onPrimaryContainer: Color(0xFFFFDBD0),
+      secondary: Color(0xFFD4956B),
+      onSecondary: Color(0xFF3E1F0A),
+      secondaryContainer: Color(0xFF5C381D),
+      onSecondaryContainer: Color(0xFFFFDCC2),
+      tertiary: Color(0xFF8C9E63),
+      onTertiary: Color(0xFF1D2600),
+      tertiaryContainer: Color(0xFF343D15),
+      onTertiaryContainer: Color(0xFFD8E8A0),
+      error: Color(0xFFFFB4AB),
+      errorContainer: Color(0xFF93000A),
+      onError: Color(0xFF690005),
+      onErrorContainer: Color(0xFFFFDAD6),
+      surface: Color(0xFF1E1E1E),
+      onSurface: Color(0xFFE3E2E6),
+      surfaceVariant: Color(0xFF2C2C2C),
+      onSurfaceVariant: Color(0xFFC4C6D0),
+      outline: Color(0xFF3A3A3C),
+      outlineVariant: Color(0xFF2C2C2C),
+      inverseSurface: Color(0xFFE3E2E6),
+      onInverseSurface: Color(0xFF1E1E1E),
+      inversePrimary: Color(0xFFB8573E),
+      shadow: Color(0xFF000000),
+      surfaceTint: Color(0xFFB8573E),
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: cs,
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        backgroundColor: const Color(0xFF121212),
+        foregroundColor: cs.onSurface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: cs.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: cs.outline.withValues(alpha: 0.5)),
+        ),
+        clipBehavior: Clip.antiAlias,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF1A1A1A),
+        indicatorColor: cs.primary.withValues(alpha: 0.15),
+        elevation: 0,
+        height: 65,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelTextStyle: WidgetStatePropertyAll(
+          TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface),
+        ),
+        iconTheme: WidgetStatePropertyAll(
+          IconThemeData(color: cs.onSurfaceVariant, size: 22),
+        ),
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: const Color(0xFF121212),
+      ),
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        side: BorderSide(color: cs.outline.withValues(alpha: 0.5)),
+        backgroundColor: cs.surfaceVariant.withValues(alpha: 0.5),
+      ),
+      dividerTheme: DividerThemeData(
+        thickness: 0.5,
+        space: 0,
+        color: cs.outline.withValues(alpha: 0.3),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: cs.surfaceVariant.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
       ),
     );
   }
 
+  // ---- Light theme ----
   ThemeData _buildLightTheme() {
-    const colorScheme = ColorScheme(
+    const cs = ColorScheme(
       brightness: Brightness.light,
       primary: Color(0xFFB8573E),
       onPrimary: Color(0xFFFFFFFF),
@@ -52,135 +161,213 @@ class CalCityApp extends StatelessWidget {
       errorContainer: Color(0xFFFFDAD6),
       onError: Color(0xFFFFFFFF),
       onErrorContainer: Color(0xFF410002),
-      background: Color(0xFFFFFBFF),
-      onBackground: Color(0xFF201A18),
-      surface: Color(0xFFFFFBFF),
-      onSurface: Color(0xFF201A18),
-      surfaceVariant: Color(0xFFF5DED5),
-      onSurfaceVariant: Color(0xFF53443D),
-      outline: Color(0xFF85736B),
-      onInverseSurface: Color(0xFFFAEEE8),
-      inverseSurface: Color(0xFF362F2B),
+      surface: Color(0xFFF8F9FA),
+      onSurface: Color(0xFF1A1C1E),
+      surfaceVariant: Color(0xFFF0EEE9),
+      onSurfaceVariant: Color(0xFF44474F),
+      outline: Color(0xFFE0E0E0),
+      outlineVariant: Color(0xFFE8E8E8),
+      inverseSurface: Color(0xFF2F3033),
+      onInverseSurface: Color(0xFFF1F0F4),
       inversePrimary: Color(0xFFFFB59E),
       shadow: Color(0xFF000000),
+      surfaceTint: Color(0xFFB8573E),
     );
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
-      appBarTheme: const AppBarTheme(
+      colorScheme: cs,
+      scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+      appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0.5,
+        backgroundColor: const Color(0xFFF5F5F5),
+        foregroundColor: cs.onSurface,
+        surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
+        color: cs.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: colorScheme.outlineVariant, width: 0.5),
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: cs.outline.withValues(alpha: 0.5)),
         ),
         clipBehavior: Clip.antiAlias,
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFFFAFAFA),
+        indicatorColor: cs.primary.withValues(alpha: 0.12),
+        elevation: 0,
+        height: 65,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelTextStyle: WidgetStatePropertyAll(
+          TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface),
         ),
-        filled: true,
-        fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.3),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        iconTheme: WidgetStatePropertyAll(
+          IconThemeData(color: cs.onSurfaceVariant, size: 22),
+        ),
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: const Color(0xFFF5F5F5),
       ),
       chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        side: BorderSide(color: cs.outline.withValues(alpha: 0.5)),
+        backgroundColor: cs.surfaceVariant.withValues(alpha: 0.5),
       ),
-      dividerTheme: const DividerThemeData(
-        thickness: 0.5,
-        space: 0,
+      dividerTheme: DividerThemeData(
+        thickness: 0.5, space: 0,
+        color: cs.outline.withValues(alpha: 0.3),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: cs.surfaceVariant.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: const Color(0xFFFAFAFA),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
       ),
     );
   }
+}
 
-  ThemeData _buildDarkTheme() {
-    const colorScheme = ColorScheme(
-      brightness: Brightness.dark,
-      primary: Color(0xFFFFB59E),
-      onPrimary: Color(0xFF571F0D),
-      primaryContainer: Color(0xFF8B3A26),
-      onPrimaryContainer: Color(0xFFFFDBD0),
-      secondary: Color(0xFFF0BA96),
-      onSecondary: Color(0xFF4A2E15),
-      secondaryContainer: Color(0xFF6A4426),
-      onSecondaryContainer: Color(0xFFFFDCC2),
-      tertiary: Color(0xFFC7D6A1),
-      onTertiary: Color(0xFF303615),
-      tertiaryContainer: Color(0xFF474F2B),
-      onTertiaryContainer: Color(0xFFE3F2BB),
-      error: Color(0xFFFFB4AB),
-      errorContainer: Color(0xFF93000A),
-      onError: Color(0xFF690005),
-      onErrorContainer: Color(0xFFFFDAD6),
-      background: Color(0xFF1F1A18),
-      onBackground: Color(0xFFEDE0DA),
-      surface: Color(0xFF1F1A18),
-      onSurface: Color(0xFFEDE0DA),
-      surfaceVariant: Color(0xFF53443D),
-      onSurfaceVariant: Color(0xFFD8C2B9),
-      outline: Color(0xFFA08D84),
-      onInverseSurface: Color(0xFF201A18),
-      inverseSurface: Color(0xFFEDE0DA),
-      inversePrimary: Color(0xFFB8573E),
-      shadow: Color(0xFF000000),
-    );
+/// Main scaffold shell with bottom navigation
+class MainShell extends StatefulWidget {
+  const MainShell({super.key});
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
 
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      appBarTheme: const AppBarTheme(
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 1,
+class _MainShellState extends State<MainShell> {
+  int _selectedIndex = 0;
+
+  static const _screens = <Widget>[
+    HomeScreen(),
+    ExploreScreen(),
+    BusinessesScreen(),
+    AlertsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
       ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: colorScheme.outlineVariant, width: 0.5),
-        ),
-        clipBehavior: Clip.antiAlias,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        filled: true,
-        fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.3),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
           ),
-        ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.store_outlined),
+            selectedIcon: Icon(Icons.store),
+            label: 'Businesses',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.campaign_outlined),
+            selectedIcon: Icon(Icons.campaign),
+            label: 'Alerts',
+          ),
+        ],
       ),
-      chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    );
+  }
+}
+
+/// Explore screen — category grid
+class ExploreScreen extends StatelessWidget {
+  const ExploreScreen({super.key});
+
+  static const _categories = <Map<String, dynamic>>[
+    {'slug': 'city_works', 'label': 'City Works', 'icon': Icons.engineering_outlined, 'color': Color(0xFF5F6B41)},
+    {'slug': 'church', 'label': 'Church/Faith', 'icon': Icons.church_outlined, 'color': Color(0xFF8B5A3C)},
+    {'slug': 'recreation', 'label': 'Recreation', 'icon': Icons.park_outlined, 'color': Color(0xFF4A7C59)},
+    {'slug': 'law_enforcement', 'label': 'Law Enforcement', 'icon': Icons.local_police_outlined, 'color': Color(0xFF3A4B6D)},
+    {'slug': 'health', 'label': 'Health', 'icon': Icons.health_and_safety_outlined, 'color': Color(0xFF4D8C7A)},
+    {'slug': 'education', 'label': 'Education', 'icon': Icons.school_outlined, 'color': Color(0xFF6B5B95)},
+    {'slug': 'business', 'label': 'Business', 'icon': Icons.store_outlined, 'color': Color(0xFFB8573E)},
+    {'slug': 'traffic', 'label': 'Traffic', 'icon': Icons.traffic_outlined, 'color': Color(0xFF8B6B3A)},
+    {'slug': 'community', 'label': 'Community', 'icon': Icons.celebration_outlined, 'color': Color(0xFF9B5E3A)},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Explore')),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.0,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        itemCount: _categories.length,
+        itemBuilder: (ctx, i) {
+          final cat = _categories[i];
+          final color = cat['color'] as Color;
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(ctx, MaterialPageRoute(
+                builder: (_) => CategoryScreen(
+                  category: cat['slug'] as String,
+                  title: cat['label'] as String,
+                ),
+              ));
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(cat['icon'] as IconData, color: color, size: 22),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    cat['label'] as String,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurface,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

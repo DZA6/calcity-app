@@ -10,95 +10,110 @@ class NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final dateFormat = DateFormat('MMM d, yyyy');
+    final cs = Theme.of(context).colorScheme;
+    final timeAgo = _formatTimeAgo(item.createdAt);
 
     return GestureDetector(
       onTap: onTap,
-      child: Card(
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+        ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            // Hero image at top — with fallback color bar if no image
+            // Hero image
             if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-              Stack(
-                children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 10,
-                    child: Image.network(
-                      item.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _imageFallback(cs),
-                      loadingBuilder: (ctx, child, progress) {
-                        if (progress == null) return child;
-                        return _imageFallback(cs);
-                      },
-                    ),
-                  ),
-                  if (item.videoUrl != null && item.videoUrl!.isNotEmpty)
-                    Positioned(
-                      bottom: 8, right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.play_circle_filled, color: Colors.white, size: 14),
-                            SizedBox(width: 4),
-                            Text('Video', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              )
-            else
-              Container(
-                height: 4,
-                color: item.featured ? cs.primary : cs.tertiary,
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  item.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _imagePlaceholder(cs),
+                  loadingBuilder: (ctx, child, progress) {
+                    if (progress == null) return child;
+                    return _imagePlaceholder(cs);
+                  },
+                ),
               ),
-            // Text content
+            // Content
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (item.featured)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(6)),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.star, size: 12, color: cs.onPrimaryContainer),
-                          const SizedBox(width: 4),
-                          Text('Featured',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onPrimaryContainer)),
-                        ],
-                      ),
-                    ),
-                  Text(item.title,
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface, height: 1.3),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 6),
-                  Text(item.excerpt,
-                      style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, height: 1.4),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    Icon(Icons.schedule, size: 13, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
-                    const SizedBox(width: 4),
-                    Text(dateFormat.format(item.createdAt),
+                  // Source badge + timestamp row
+                  Row(
+                    children: [
+                      if (item.category != null && item.category!.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: cs.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            item.category!.replaceAll('_', ' '),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ),
+                      if (item.featured) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: cs.tertiary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star, size: 11, color: cs.tertiary),
+                              const SizedBox(width: 4),
+                              Text('Featured',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.tertiary)),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      Text(timeAgo,
                         style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.6))),
-                  ]),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Title
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                      height: 1.3,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (item.content.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      item.excerpt,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: cs.onSurfaceVariant,
+                        height: 1.45,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -108,14 +123,31 @@ class NewsCard extends StatelessWidget {
     );
   }
 
-  Widget _imageFallback(ColorScheme cs) {
+  Widget _imagePlaceholder(ColorScheme cs) {
     return Container(
       decoration: BoxDecoration(
-        color: cs.surfaceVariant,
+        gradient: LinearGradient(
+          colors: [
+            cs.surfaceVariant,
+            cs.surfaceVariant.withValues(alpha: 0.5),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Center(
-        child: Icon(Icons.article_outlined, color: cs.outline, size: 32),
+        child: Icon(Icons.article_outlined, color: cs.outline.withValues(alpha: 0.4), size: 36),
       ),
     );
+  }
+
+  String _formatTimeAgo(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return DateFormat('MMM d').format(date);
   }
 }

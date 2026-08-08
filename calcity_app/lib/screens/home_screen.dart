@@ -3,39 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/content.dart';
 import '../providers/content_provider.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/news_card.dart';
 import '../widgets/event_card.dart';
 import '../widgets/business_card.dart';
-import 'news_screen.dart';
-import 'events_screen.dart';
-import 'businesses_screen.dart';
-import 'tip_screen.dart';
-import 'alerts_screen.dart';
-import 'council_screen.dart';
-import 'category_screen.dart';
 import 'detail_screen.dart';
-
-/// Drawer categories with emoji-enhanced labels.
-class _DrawerEntry {
-  final String label;
-  final String emoji;
-  final String slug;
-  final IconData icon;
-  final Color color;
-  const _DrawerEntry(this.label, this.emoji, this.slug, this.icon, this.color);
-}
-
-const _drawerCategories = <_DrawerEntry>[
-  _DrawerEntry('City Works', '🏗️', 'city_works', Icons.engineering_outlined, Color(0xFF5F6B41)),
-  _DrawerEntry('Church / Faith', '⛪', 'church', Icons.church_outlined, Color(0xFF8B5A3C)),
-  _DrawerEntry('Recreation & Parks', '🌳', 'recreation', Icons.park_outlined, Color(0xFF4A7C59)),
-  _DrawerEntry('Law Enforcement', '🚔', 'law_enforcement', Icons.local_police_outlined, Color(0xFF3A4B6D)),
-  _DrawerEntry('Health & Wellness', '🏥', 'health', Icons.health_and_safety_outlined, Color(0xFF4D8C7A)),
-  _DrawerEntry('Schools & Education', '🎓', 'education', Icons.school_outlined, Color(0xFF6B5B95)),
-  _DrawerEntry('Business & Economy', '💼', 'business', Icons.store_outlined, Color(0xFFB8573E)),
-  _DrawerEntry('Traffic & Roads', '🚧', 'traffic', Icons.traffic_outlined, Color(0xFF8B6B3A)),
-  _DrawerEntry('Community Events', '🎉', 'community', Icons.celebration_outlined, Color(0xFF9B5E3A)),
-];
+import 'settings_screen.dart';
+import 'schools_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,23 +25,24 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<ContentProvider>();
-      if (!provider.isInitialized) provider.refreshAll();
+      final prov = context.read<ContentProvider>();
+      if (!prov.isInitialized) prov.refreshAll();
     });
   }
 
   void _push(Widget screen) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
 
-  // ---- build ----
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: _appBar(context),
+      appBar: _appBar(context, cs),
       drawer: _buildDrawer(context),
-      body: Consumer<ContentProvider>(
-        builder: (context, prov, _) {
+      body: Consumer2<ContentProvider, SettingsProvider>(
+        builder: (context, prov, settings, _) {
           if (prov.isLoading && prov.news.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -75,25 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             onRefresh: () => prov.refreshAll(),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 40),
-              children: [
-                _weatherCard(context, prov),
-                const SizedBox(height: 12),
-                if (prov.activeAlerts.isNotEmpty) ...[
-                  _alertBanner(context, prov.activeAlerts.first),
-                  const SizedBox(height: 12),
-                ],
-                _categoryChipsCompact(context),
-                const SizedBox(height: 16),
-                _sectionNews(context, prov),
-                const SizedBox(height: 20),
-                _sectionEvents(context, prov),
-                const SizedBox(height: 20),
-                _sectionBusinesses(context, prov),
-                const SizedBox(height: 20),
-                _sectionCouncil(context, prov),
-                const SizedBox(height: 32),
-                _footer(context),
-              ],
+              children: _buildFeed(context, prov, settings),
             ),
           );
         },
@@ -101,315 +58,448 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  // ---- app bar ----
-  PreferredSizeWidget _appBar(BuildContext context) => AppBar(
-    title: const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('🌵 Cal City'),
-        SizedBox(width: 6),
-        Text('📍', style: TextStyle(fontSize: 18)),
-      ],
-    ),
-    actions: [
-      IconButton(
-        icon: const Icon(Icons.refresh),
-        onPressed: () => context.read<ContentProvider>().refreshAll(),
-        tooltip: 'Refresh',
-      ),
-    ],
-  );
+  List<Widget> _buildFeed(BuildContext context, ContentProvider prov, SettingsProvider settings) {
+    final cs = Theme.of(context).colorScheme;
+    final items = <Widget>[];
 
-  // ---- drawer ----
-  Widget _buildDrawer(BuildContext ctx) {
-    final theme = Theme.of(ctx);
+    // Weather card at top
+    if (prov.weather != null) {
+      items.add(_weatherBanner(cs, prov.weather!));
+      items.add(const SizedBox(height: 10));
+    }
+
+    // Active alert banner
+    if (settings.showAlerts && prov.activeAlerts.isNotEmpty) {
+      items.add(_alertBanner(context, prov.activeAlerts.first));
+      items.add(const SizedBox(height: 10));
+    }
+
+    // Timeline: merged news + events feed sorted by date
+    if (settings.showNews || settings.showEvents) {
+      items.add(_sectionHeader(cs, 'Timeline'));
+      items.add(const SizedBox(height: 6));
+
+      final timelineItems = <_TimelineEntry>[];
+
+      if (settings.showNews) {
+        for (final n in prov.news) {
+          timelineItems.add(_TimelineEntry(
+            date: n.createdAt,
+            type: 'news',
+            widget: Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: NewsCard(
+                item: n,
+                onTap: () => _openNews(context, n),
+              ),
+            ),
+          ));
+        }
+      }
+
+      if (settings.showEvents) {
+        for (final e in prov.events.take(10)) {
+          final date = e.startDate ?? DateTime.now();
+          timelineItems.add(_TimelineEntry(
+            date: date,
+            type: 'event',
+            widget: Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: EventCard(item: e, onTap: () => _openEvent(context, e)),
+            ),
+          ));
+        }
+      }
+
+      // Sort by date, newest first
+      timelineItems.sort((a, b) => b.date.compareTo(a.date));
+
+      for (final entry in timelineItems.take(30)) {
+        items.add(entry.widget);
+      }
+    }
+
+    // Businesses section
+    if (settings.showBusinesses && prov.businesses.isNotEmpty) {
+      items.add(const SizedBox(height: 12));
+      items.add(_sectionHeader(cs, 'Local Businesses'));
+      items.add(const SizedBox(height: 6));
+
+      items.add(
+        RepaintBoundary(
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 0.90,
+            ),
+            itemCount: prov.businesses.length.clamp(0, 8),
+            itemBuilder: (_, i) => BusinessCard(
+              item: prov.businesses[i],
+              onTap: () => _openBusiness(context, prov.businesses[i]),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Schools section
+    if (settings.showSchools && prov.schools.isNotEmpty) {
+      items.add(const SizedBox(height: 12));
+      items.add(Row(
+        children: [
+          _sectionHeader(cs, 'Schools'),
+          const Spacer(),
+          TextButton(
+            onPressed: () => _push(const SchoolsScreen()),
+            child: Text('See all', style: TextStyle(fontSize: 12, color: cs.primary)),
+          ),
+        ],
+      ));
+      items.add(const SizedBox(height: 6));
+      for (final s in prov.schools.take(3)) {
+        items.add(Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _schoolRow(context, s),
+        ));
+      }
+    }
+
+    // Council section
+    if (settings.showCouncil && prov.councilAgendas.isNotEmpty) {
+      items.add(const SizedBox(height: 12));
+      items.add(_sectionHeader(cs, 'City Council'));
+      items.add(const SizedBox(height: 6));
+      for (final a in prov.councilAgendas.take(3)) {
+        items.add(Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: _councilRow(context, a),
+        ));
+      }
+    }
+
+    // Empty state
+    if (items.length <= 2) {
+      items.add(const SizedBox(height: 60));
+      items.add(Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inbox_outlined, size: 48, color: cs.outline.withValues(alpha: 0.4)),
+            const SizedBox(height: 12),
+            Text('No content to show',
+              style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant.withValues(alpha: 0.5))),
+            const SizedBox(height: 4),
+            Text('Enable sections in Settings',
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant.withValues(alpha: 0.3))),
+          ],
+        ),
+      ));
+    }
+
+    return items;
+  }
+
+  // ---- App Bar ----
+  PreferredSizeWidget _appBar(BuildContext context, ColorScheme cs) {
+    return AppBar(
+      title: Text(
+        'CalCity',
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: cs.primary,
+          letterSpacing: -0.3,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings_outlined),
+          onPressed: () => _push(const SettingsScreen()),
+          tooltip: 'Settings',
+        ),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: () => context.read<ContentProvider>().refreshAll(),
+          tooltip: 'Refresh',
+        ),
+      ],
+    );
+  }
+
+  // ---- Settings Drawer ----
+  Widget _buildDrawer(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final settings = context.watch<SettingsProvider>();
+
     return Drawer(
       child: SafeArea(
-        child: Column(children: [
-          _drawerHeader(theme),
-          _drawerWeather(theme),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drawer header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+              color: cs.surfaceVariant.withValues(alpha: 0.3),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.location_city, color: cs.primary, size: 24),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('CalCity', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  const SizedBox(height: 2),
+                  Text('California City Community',
+                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Dark mode toggle
+            SwitchListTile(
+              title: const Text('Dark Mode', style: TextStyle(fontSize: 14)),
+              secondary: Icon(Icons.dark_mode_outlined, color: cs.primary),
+              value: settings.darkMode,
+              onChanged: (v) => settings.setDarkMode(v),
+            ),
+
+            const Divider(indent: 16, endIndent: 16),
+
+            // Section toggles
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Text('SECTIONS',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary, letterSpacing: 0.5)),
+            ),
+
+            _drawerToggle(cs, Icons.article_outlined, 'News', settings.showNews, (v) => settings.setShowNews(v)),
+            _drawerToggle(cs, Icons.event_outlined, 'Events', settings.showEvents, (v) => settings.setShowEvents(v)),
+            _drawerToggle(cs, Icons.store_outlined, 'Businesses', settings.showBusinesses, (v) => settings.setShowBusinesses(v)),
+            _drawerToggle(cs, Icons.school_outlined, 'Schools', settings.showSchools, (v) => settings.setShowSchools(v)),
+            _drawerToggle(cs, Icons.person_outlined, 'Freelancers', settings.showFreelancers, (v) => settings.setShowFreelancers(v)),
+            _drawerToggle(cs, Icons.campaign_outlined, 'Alerts', settings.showAlerts, (v) => settings.setShowAlerts(v)),
+            _drawerToggle(cs, Icons.account_balance_outlined, 'City Council', settings.showCouncil, (v) => settings.setShowCouncil(v)),
+
+            const Divider(indent: 16, endIndent: 16),
+
+            // Full settings
+            ListTile(
+              leading: Icon(Icons.settings_outlined, color: cs.primary),
+              title: const Text('All Settings', style: TextStyle(fontSize: 14)),
+              onTap: () {
+                Navigator.pop(context);
+                _push(const SettingsScreen());
+              },
+            ),
+
+            const Spacer(),
+
+            // Footer
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Text(
+                'California City, CA 93505',
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerToggle(ColorScheme cs, IconData icon, String label, bool value, ValueChanged<bool> onChanged) {
+    return SwitchListTile(
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      secondary: Icon(icon, size: 20, color: value ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5)),
+      value: value,
+      onChanged: onChanged,
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+    );
+  }
+
+  // ---- Section header ----
+  Widget _sectionHeader(ColorScheme cs, String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: cs.onSurfaceVariant,
+        letterSpacing: 0.3,
+      ),
+    );
+  }
+
+  // ---- Weather banner ----
+  Widget _weatherBanner(ColorScheme cs, WeatherInfo w) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.wb_sunny_outlined, size: 28, color: cs.primary),
+          const SizedBox(width: 12),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ..._drawerCategories.map((cat) => ListTile(
-                  leading: Text(cat.emoji, style: const TextStyle(fontSize: 20)),
-                  title: Text(cat.label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                  trailing: const Icon(Icons.chevron_right, size: 18),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _push(CategoryScreen(category: cat.slug, title: '${cat.emoji} ${cat.label}'));
-                  },
-                )),
-                const Divider(indent: 16, endIndent: 16),
-                ListTile(
-                  leading: const Text('🏛️', style: TextStyle(fontSize: 20)),
-                  title: const Text('City Council', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                  onTap: () { Navigator.pop(ctx); _push(const CouncilScreen()); },
-                ),
-                ListTile(
-                  leading: const Text('🚨', style: TextStyle(fontSize: 20)),
-                  title: const Text('Alerts', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                  onTap: () { Navigator.pop(ctx); _push(const AlertsScreen()); },
-                ),
-                ListTile(
-                  leading: const Text('💡', style: TextStyle(fontSize: 20)),
-                  title: const Text('Submit a Tip', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                  onTap: () { Navigator.pop(ctx); _push(const TipScreen()); },
-                ),
+                Text(w.headline,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                if (w.detail != null && w.detail!.isNotEmpty)
+                  Text(w.detail!,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
               ],
             ),
           ),
-        ]),
-      ),
-    );
-  }
-
-  Widget _drawerHeader(ThemeData theme) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)],
-        begin: Alignment.topLeft, end: Alignment.bottomRight,
-      ),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('🌵', style: TextStyle(fontSize: 28)),
-      const SizedBox(height: 8),
-      const Text('California City', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 2),
-      Text('🏜️ Community Hub', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
-    ]),
-  );
-
-  Widget _drawerWeather(ThemeData theme) =>
-    Consumer<ContentProvider>(builder: (_, prov, __) {
-      final w = prov.weather;
-      if (w == null) return const SizedBox.shrink();
-      return Container(
-        margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-        ),
-        child: Row(children: [
-          Icon(Icons.wb_sunny_outlined, color: Colors.amber.shade700, size: 26),
-          const SizedBox(width: 10),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${w.temperatureHigh ?? '—'}° / ${w.temperatureLow ?? '—'}°',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-            Text(w.headline, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
-          ]),
-        ]),
-      );
-    });
-
-  // ---- weather card ----
-  Widget _weatherCard(BuildContext ctx, ContentProvider prov) {
-    final w = prov.weather;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF1565C0).withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+          if (w.temperatureHigh != null)
+            Text('${w.temperatureHigh}F',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: cs.primary)),
         ],
       ),
-      child: w == null
-        ? const Row(children: [
-            Text('☀️', style: TextStyle(fontSize: 36)),
-            SizedBox(width: 12),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Weather', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600)),
-              Text('Update coming soon', style: TextStyle(color: Colors.white54, fontSize: 13)),
-            ]),
-          ])
-        : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(w.temperatureHigh != null && w.temperatureHigh! > 90 ? '🥵' : '☀️', style: const TextStyle(fontSize: 36)),
-              const SizedBox(width: 12),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${w.temperatureHigh ?? '—'}°F / ${w.temperatureLow ?? '—'}°F',
-                  style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700, height: 1.1)),
-                Text(w.headline, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 14)),
-              ]),
-            ]),
-            const SizedBox(height: 14),
-            Row(children: [
-              if (w.humidity != null && w.humidity!.isNotEmpty)
-                _weatherStat('💧', w.humidity!),
-              const SizedBox(width: 14),
-              if (w.wind != null && w.wind!.isNotEmpty)
-                _weatherStat('💨', w.wind!),
-              const SizedBox(width: 14),
-              if (w.fireRisk != null && w.fireRisk!.isNotEmpty)
-                _weatherStat('🔥', w.fireRisk!),
-            ]),
-          ]),
     );
   }
 
-  Widget _weatherStat(String icon, String val) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Text(icon, style: const TextStyle(fontSize: 14)),
-    const SizedBox(width: 4),
-    Text(val, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12)),
-  ]);
-
-  // ---- alert banner ----
-  Widget _alertBanner(BuildContext ctx, AlertItem alert) {
+  // ---- Alert banner ----
+  Widget _alertBanner(BuildContext context, AlertItem alert) {
     final sev = alert.severity.toLowerCase();
-    final color = sev == 'emergency' ? Colors.red.shade800
-        : sev == 'warning' ? Colors.orange.shade800
-        : Colors.blue.shade800;
-    final emoji = sev == 'emergency' ? '🚨' : sev == 'warning' ? '⚠️' : 'ℹ️';
+    final color = sev == 'emergency'
+        ? Colors.red.shade700
+        : sev == 'warning'
+            ? Colors.amber.shade700
+            : Colors.blue.shade700;
     return GestureDetector(
-      onTap: () => _push(const AlertsScreen()),
+      onTap: () {},
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: color,
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))],
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
-        child: Row(children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Expanded(child: Text(alert.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14))),
-          const Icon(Icons.chevron_right, color: Colors.white, size: 18),
-        ]),
+        child: Row(
+          children: [
+            Icon(
+              sev == 'emergency' ? Icons.error : sev == 'warning' ? Icons.warning_amber : Icons.info_outline,
+              color: color,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(alert.title,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+            ),
+            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5), size: 18),
+          ],
+        ),
       ),
     );
   }
 
-  // ---- category chips (compact, emoji) ----
-  Widget _categoryChipsCompact(BuildContext ctx) => Wrap(
-    spacing: 6, runSpacing: 6,
-    children: _drawerCategories.take(6).map((c) => ActionChip(
-      avatar: Text(c.emoji, style: const TextStyle(fontSize: 16)),
-      label: Text(c.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-      visualDensity: VisualDensity.compact,
-      side: BorderSide(color: Theme.of(ctx).colorScheme.outlineVariant.withValues(alpha: 0.4)),
-      onPressed: () => _push(CategoryScreen(category: c.slug, title: '${c.emoji} ${c.label}')),
-    )).toList(),
-  );
-
-  // ---- section headers (const-able) ----
-  Widget _sectionHeader(String emojiLabel, int count, {VoidCallback? onSeeAll}) => Row(children: [
-    Text(emojiLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-    const SizedBox(width: 6),
-    Text('$count', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
-    const Spacer(),
-    if (onSeeAll != null)
-      TextButton(onPressed: onSeeAll, child: const Text('See all →', style: TextStyle(fontWeight: FontWeight.w600))),
-  ]);
-
-  // ---- news section ----
-  Widget _sectionNews(BuildContext ctx, ContentProvider prov) {
-    if (prov.news.isEmpty) return _empty('📰', 'No news yet — check back soon!');
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _sectionHeader('📰 Latest News', prov.news.length, onSeeAll: () => _push(const NewsScreen())),
-      const SizedBox(height: 8),
-      SizedBox(
-        height: 280,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: prov.news.length.clamp(0, 10),
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
-          itemBuilder: (_, i) => SizedBox(
-            width: 250,
-            child: NewsCard(item: prov.news[i], onTap: () => _openNews(ctx, prov.news[i])),
-          ),
+  // ---- School row ----
+  Widget _schoolRow(BuildContext context, SchoolItem s) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.school_outlined, color: cs.primary, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(s.name,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                  if (s.type != null)
+                    Text(s.type!,
+                      style: TextStyle(fontSize: 12, color: cs.primary)),
+                  if (s.address != null)
+                    Text(s.address!,
+                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-    ]);
+    );
   }
 
-  // ---- events section ----
-  Widget _sectionEvents(BuildContext ctx, ContentProvider prov) {
-    if (prov.events.isEmpty) return _empty('📅', 'No upcoming events');
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _sectionHeader('📅 Upcoming Events', prov.events.length, onSeeAll: () => _push(const EventsScreen())),
-      const SizedBox(height: 6),
-      ...prov.events.take(3).map((e) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: EventCard(item: e, onTap: () => _openEvent(ctx, e)),
-      )),
-    ]);
-  }
-
-  // ---- businesses section ----
-  Widget _sectionBusinesses(BuildContext ctx, ContentProvider prov) {
-    if (prov.businesses.isEmpty) return _empty('🏪', 'No businesses yet');
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _sectionHeader('🏪 Local Businesses', prov.businesses.length, onSeeAll: () => _push(const BusinessesScreen())),
-      const SizedBox(height: 6),
-      RepaintBoundary(
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 0.82,
-          ),
-          itemCount: prov.businesses.length.clamp(0, 8),
-          itemBuilder: (_, i) => BusinessCard(item: prov.businesses[i], onTap: () => _openBusiness(ctx, prov.businesses[i])),
-        ),
-      ),
-    ]);
-  }
-
-  // ---- council section ----
-  Widget _sectionCouncil(BuildContext ctx, ContentProvider prov) {
-    if (prov.councilAgendas.isEmpty) return _empty('🏛️', 'No council meetings');
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _sectionHeader('🏛️ City Council', prov.councilAgendas.length, onSeeAll: () => _push(const CouncilScreen())),
-      const SizedBox(height: 6),
-      ...prov.councilAgendas.take(4).map((a) => _councilRow(ctx, a)),
-    ]);
-  }
-
-  Widget _councilRow(BuildContext ctx, council) {
-    final theme = Theme.of(ctx);
-    final date = council.meetingDate != null
-        ? DateFormat('MMM d').format(council.meetingDate!)
+  // ---- Council row ----
+  Widget _councilRow(BuildContext context, CouncilAgendaItem a) {
+    final cs = Theme.of(context).colorScheme;
+    final date = a.meetingDate != null
+        ? DateFormat('MMM d, yyyy').format(a.meetingDate!)
         : 'TBD';
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: ListTile(
-        leading: Icon(Icons.calendar_today, color: theme.colorScheme.primary, size: 22),
-        title: Text(council.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
-        trailing: Chip(label: Text(date, style: const TextStyle(fontSize: 10)), visualDensity: VisualDensity.compact),
-        onTap: () => _push(DetailScreen(
-          title: council.title, itemType: 'council',
-          content: council.description ?? '',
-          metadata: {'pdf_url': council.pdfUrl ?? '', 'meeting_date': council.meetingDate?.toIso8601String() ?? ''},
-        )),
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today, size: 18, color: cs.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(a.title,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: cs.onSurface),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(date,
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _empty(String emoji, String msg) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 20),
-    child: Center(child: Column(children: [
-      Text(emoji, style: const TextStyle(fontSize: 32)),
-      const SizedBox(height: 6),
-      Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 13)),
-    ])),
-  );
-
-  Widget _footer(BuildContext ctx) => Center(child: Text('📍 California City, CA 93505 🏜️',
-    style: TextStyle(fontSize: 11, color: Theme.of(ctx).colorScheme.outline)));
-
-  // ---- navigation helpers ----
-  void _openNews(BuildContext ctx, dynamic item) {
-    if (item is! NewsItem) return;
+  // ---- Nav helpers ----
+  void _openNews(BuildContext ctx, NewsItem item) {
     _push(DetailScreen(title: item.title, itemType: 'news', content: item.content, metadata: {
       if (item.imageUrl != null) 'image_url': item.imageUrl!,
       if (item.videoUrl != null) 'video_url': item.videoUrl!,
@@ -418,20 +508,28 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   void _openEvent(BuildContext ctx, EventItem e) =>
-    _push(DetailScreen(title: e.title, itemType: 'event', content: e.description ?? '', metadata: {
-      if (e.startDate != null) 'start_date': e.startDate!.toIso8601String(),
-      if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
-      if (e.location != null) 'location': e.location!,
-      if (e.imageUrl != null) 'image_url': e.imageUrl!,
-    }));
+      _push(DetailScreen(title: e.title, itemType: 'event', content: e.description ?? '', metadata: {
+        if (e.startDate != null) 'start_date': e.startDate!.toIso8601String(),
+        if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
+        if (e.location != null) 'location': e.location!,
+        if (e.imageUrl != null) 'image_url': e.imageUrl!,
+      }));
 
   void _openBusiness(BuildContext ctx, BusinessItem b) =>
-    _push(DetailScreen(title: b.name, itemType: 'business', content: b.description ?? '', metadata: {
-      if (b.category != null) 'category': b.category!,
-      if (b.contactPhone != null) 'phone': b.contactPhone!,
-      if (b.contactEmail != null) 'email': b.contactEmail!,
-      if (b.website != null) 'website': b.website!,
-      if (b.address != null) 'address': b.address!,
-      if (b.imageUrl != null) 'image_url': b.imageUrl!,
-    }));
+      _push(DetailScreen(title: b.name, itemType: 'business', content: b.description ?? '', metadata: {
+        if (b.category != null) 'category': b.category!,
+        if (b.contactPhone != null) 'phone': b.contactPhone!,
+        if (b.contactEmail != null) 'email': b.contactEmail!,
+        if (b.website != null) 'website': b.website!,
+        if (b.address != null) 'address': b.address!,
+        if (b.imageUrl != null) 'image_url': b.imageUrl!,
+      }));
+}
+
+/// Timeline entry for sorting news + events
+class _TimelineEntry {
+  final DateTime date;
+  final String type;
+  final Widget widget;
+  const _TimelineEntry({required this.date, required this.type, required this.widget});
 }
