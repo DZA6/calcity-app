@@ -1,0 +1,116 @@
+{% extends "manage/base.html" %}
+{% block title %}Dashboard — CalCity Manage{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+<p class="page-subtitle">Quick overview of your community content</p>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-num">{{ news_approved }}/{{ news_count }}</div>
+    <div class="stat-label">Approved Articles</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ active_alerts }}</div>
+    <div class="stat-label">Active Alerts</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ upcoming_events }}</div>
+    <div class="stat-label">Upcoming Events</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ pending_tips }}</div>
+    <div class="stat-label">Pending Tips</div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+  <a href="{% url 'manage:news_edit' %}" class="qa-card">
+    <div class="qa-icon">&#9998;</div>
+    <div><div class="qa-text">New Article</div><div class="qa-desc">Write a news story with photos/video</div></div>
+  </a>
+  <a href="{% url 'manage:weather' %}" class="qa-card">
+    <div class="qa-icon">&#9728;</div>
+    <div><div class="qa-text">Update Weather</div><div class="qa-desc">Post today's forecast</div></div>
+  </a>
+  <a href="{% url 'manage:alert_edit' %}" class="qa-card">
+    <div class="qa-icon">&#9888;</div>
+    <div><div class="qa-text">Post Alert</div><div class="qa-desc">Emergency, warning, or info</div></div>
+  </a>
+  <a href="/admin/community/event/add/" class="qa-card">
+    <div class="qa-icon">&#128197;</div>
+    <div><div class="qa-text">New Event</div><div class="qa-desc">Add a community event</div></div>
+  </a>
+</div>
+
+<!-- Current Weather -->
+{% if latest_weather %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    Current Weather
+    <a href="{% url 'manage:weather' %}" class="btn btn-sm btn-outline">Edit</a>
+  </div>
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+    <div style="font-size: 2.5rem;">{{ latest_weather.temperature_high }}&deg;</div>
+    <div>
+      <strong>{{ latest_weather.headline }}</strong><br>
+      <span style="color: var(--text-light); font-size: 0.85rem;">
+        Low {{ latest_weather.temperature_low }}&deg; &middot;
+        Humidity {{ latest_weather.humidity }} &middot;
+        Wind {{ latest_weather.wind }}
+        {% if latest_weather.fire_risk %}&middot; Fire Risk: {{ latest_weather.fire_risk }}{% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Articles -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    Recent Articles
+    <a href="{% url 'manage:news_list' %}" class="btn btn-sm btn-outline">View All</a>
+  </div>
+  {% if recent_news %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+      {% for article in recent_news %}
+      <tr>
+        <td><a href="{% url 'manage:news_edit' article.pk %}" style="color:var(--text);text-decoration:none;">{{ article.title|truncatechars:50 }}</a></td>
+        <td><span class="badge badge-neutral">{{ article.get_category_display }}</span></td>
+        <td>{% if article.is_approved %}<span class="badge badge-success">Live</span>{% else %}<span class="badge badge-warning">Draft</span>{% endif %}</td>
+        <td style="font-size:0.8rem;color:var(--text-light);">{{ article.created_at|date:"M j, Y" }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state"><div class="empty-icon">&#128240;</div>No articles yet. <a href="{% url 'manage:news_edit' %}">Write your first one.</a></div>
+  {% endif %}
+</div>
+
+<!-- Active Alerts -->
+{% if recent_alerts %}
+<div class="card">
+  <div class="card-header">
+    Active Alerts
+    <a href="{% url 'manage:alerts' %}" class="btn btn-sm btn-outline">Manage</a>
+  </div>
+  {% for alert in recent_alerts %}
+  <div class="severity-{{ alert.severity }}" style="padding:12px 16px;margin-bottom:8px;background:var(--warm-white);border-radius:6px;">
+    <strong>{{ alert.title }}</strong>
+    <span class="badge badge-{% if alert.severity == 'emergency' %}danger{% elif alert.severity == 'warning' %}warning{% else %}info{% endif %}" style="margin-left:8px;">{{ alert.get_severity_display }}</span>
+    {% if not alert.is_active %}<span class="badge badge-neutral" style="margin-left:4px;">Inactive</span>{% endif %}
+    <div style="font-size:0.85rem;color:var(--text-light);margin-top:2px;">{{ alert.message|truncatechars:100 }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

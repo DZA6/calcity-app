@@ -46,6 +46,7 @@ urlpatterns = [
     path("", api_root, name="api-root"),
     path("admin/", admin.site.urls),
     path("api/", include("community.urls")),
+    path("manage/", include("community.manage_urls")),
 ]
 
 # Serve media files in production (PA static mappings handle /static/)

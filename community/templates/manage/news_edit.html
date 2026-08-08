@@ -1,0 +1,115 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if article %}Edit Article{% else %}New Article{% endif %} — CalCity Manage{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{% url 'manage:news_list' %}" style="color:var(--text-light);text-decoration:none;font-size:1.2rem;">&larr;</a>
+  <h1 class="page-title" style="margin-bottom:0;">{% if article %}Edit Article{% else %}New Article{% endif %}</h1>
+</div>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card">
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <!-- Title -->
+  <div class="form-group">
+    <label>Title <span style="color:var(--danger);">*</span></label>
+    <input type="text" name="title" value="{{ article.title|default:'' }}" placeholder="e.g. Cal City Opens New Community Garden" required maxlength="200">
+  </div>
+
+  <!-- Content -->
+  <div class="form-group">
+    <label>Content <span style="color:var(--danger);">*</span></label>
+    <textarea name="content" placeholder="Write your article here..." required>{{ article.content|default:'' }}</textarea>
+  </div>
+
+  <!-- Category -->
+  <div class="form-group">
+    <label>Category <span class="help">Which section of the app this appears in</span></label>
+    <select name="category">
+      {% for val, label in categories %}
+      <option value="{{ val }}" {% if article.category == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Source URL -->
+  <div class="form-group">
+    <label>Source URL <span class="help">Optional link to original source</span></label>
+    <input type="url" name="source_url" value="{{ article.source_url|default:'' }}" placeholder="https://...">
+  </div>
+
+  <!-- Image Upload -->
+  <div class="form-group">
+    <label>Image <span class="help">JPEG or PNG — appears as hero photo</span></label>
+    <label class="file-input" id="image-drop">
+      <input type="file" name="image" accept="image/jpeg,image/png,image/webp" onchange="previewFile(this, 'image-preview')">
+      <div class="upload-hint">&#128247; Click to upload or drag an image here</div>
+    </label>
+    {% if preview_image_url %}
+    <div class="preview-box" id="image-preview"><img src="{{ preview_image_url }}" alt="Preview"></div>
+    {% else %}
+    <div class="preview-box" id="image-preview" style="display:none;"></div>
+    {% endif %}
+  </div>
+
+  <!-- Video Upload -->
+  <div class="form-group">
+    <label>Video <span class="help">MP4 video clip (optional)</span></label>
+    <label class="file-input" id="video-drop">
+      <input type="file" name="video" accept="video/mp4,video/webm" onchange="previewFile(this, 'video-preview')">
+      <div class="upload-hint">&#127910; Click to upload a video (MP4)</div>
+    </label>
+    {% if preview_video_url %}
+    <div class="preview-box" id="video-preview"><video src="{{ preview_video_url }}" controls></video></div>
+    {% else %}
+    <div class="preview-box" id="video-preview" style="display:none;"></div>
+    {% endif %}
+  </div>
+
+  <!-- Toggles -->
+  <div style="display:flex;gap:32px;flex-wrap:wrap;">
+    <div class="checkbox-row">
+      <input type="checkbox" name="is_approved" id="id_approved" {% if article.is_approved %}checked{% endif %}>
+      <label for="id_approved">Approved — visible in the app</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" name="featured" id="id_featured" {% if article.featured %}checked{% endif %}>
+      <label for="id_featured">Featured — show on home screen</label>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="btn-group" style="margin-top:24px;">
+    <button type="submit" class="btn btn-primary">
+      {% if article %}Save Changes{% else %}Publish Article{% endif %}
+    </button>
+    <a href="{% url 'manage:news_list' %}" class="btn btn-outline">Cancel</a>
+    {% if article %}
+    <a href="{% url 'manage:news_delete' article.pk %}" class="btn btn-danger" style="margin-left:auto;">Delete</a>
+    {% endif %}
+  </div>
+</form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewFile(input, previewId) {
+  const preview = document.getElementById(previewId);
+  const file = input.files[0];
+  if (!file) { preview.style.display = 'none'; preview.innerHTML = ''; return; }
+
+  preview.style.display = 'flex';
+  const url = URL.createObjectURL(file);
+
+  if (file.type.startsWith('image/')) {
+    preview.innerHTML = '<img src="' + url + '" alt="Preview">';
+  } else if (file.type.startsWith('video/')) {
+    preview.innerHTML = '<video src="' + url + '" controls></video>';
+  }
+}
+</script>
+{% endblock %}

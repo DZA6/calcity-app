@@ -1,0 +1,107 @@
+{% extends "manage/base.html" %}
+{% block title %}Weather — CalCity Manage{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Weather</h1>
+<p class="page-subtitle">Update the current weather that appears in the app</p>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<!-- Current Weather Display -->
+{% if weather %}
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">Currently Live</div>
+  <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+    <div style="font-size:3rem;font-weight:700;color:var(--terra-dark);">{{ weather.temperature_high }}&deg;</div>
+    <div>
+      <strong style="font-size:1.1rem;">{{ weather.headline }}</strong><br>
+      <span style="color:var(--text-light);font-size:0.9rem;">
+        Low {{ weather.temperature_low }}&deg;F &middot; Humidity {{ weather.humidity }} &middot; Wind {{ weather.wind }}<br>
+        {% if weather.fire_risk %}Fire Risk: {{ weather.fire_risk }}{% endif %}
+        {% if weather.sunrise %} &middot; Sunrise {{ weather.sunrise }}{% endif %}
+        {% if weather.sunset %} &middot; Sunset {{ weather.sunset }}{% endif %}
+      </span>
+      {% if weather.detail %}<div style="margin-top:8px;font-size:0.9rem;">{{ weather.detail }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card" style="margin-bottom:24px;">
+  <div class="empty-state"><div class="empty-icon">&#9728;</div>No weather posted yet. Create one below.</div>
+</div>
+{% endif %}
+
+<!-- Update Form -->
+<div class="card">
+  <div class="card-header">{% if weather %}Post New Update{% else %}Create Weather{% endif %}</div>
+  <form method="post">
+    {% csrf_token %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Headline <span style="color:var(--danger);">*</span> <span class="help">e.g. "Sunny and hot, high of 97&deg;F"</span></label>
+        <input type="text" name="headline" placeholder="Sunny and hot" required>
+      </div>
+      <div class="form-group">
+        <label>High Temp (&deg;F)</label>
+        <input type="number" name="temperature_high" placeholder="97" value="{{ weather.temperature_high|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Low Temp (&deg;F)</label>
+        <input type="number" name="temperature_low" placeholder="66" value="{{ weather.temperature_low|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Humidity</label>
+        <input type="text" name="humidity" placeholder="12%" value="{{ weather.humidity|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Wind</label>
+        <input type="text" name="wind" placeholder="SW 8-15 mph" value="{{ weather.wind|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Fire Risk</label>
+        <input type="text" name="fire_risk" placeholder="Moderate" value="{{ weather.fire_risk|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Sunrise</label>
+        <input type="text" name="sunrise" placeholder="6:12 AM" value="{{ weather.sunrise|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Sunset</label>
+        <input type="text" name="sunset" placeholder="7:48 PM" value="{{ weather.sunset|default:'' }}">
+      </div>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Extended Forecast / Advisory</label>
+      <textarea name="detail" placeholder="Extended forecast details, heat advisories, etc.">{{ weather.detail|default:'' }}</textarea>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" name="is_active" id="id_active" checked>
+      <label for="id_active">Active — show in the app</label>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:12px;">Post Weather Update</button>
+  </form>
+</div>
+
+<!-- History -->
+{% if all_weather %}
+<div class="card" style="margin-top:24px;">
+  <div class="card-header">Recent Updates</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Headline</th><th>Temp</th><th>Active</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+      {% for w in all_weather %}
+      <tr>
+        <td>{{ w.headline|truncatechars:40 }}</td>
+        <td>{{ w.temperature_high }}&deg; / {{ w.temperature_low }}&deg;</td>
+        <td>{% if w.is_active %}<span class="badge badge-success">Live</span>{% else %}<span class="badge badge-neutral">Past</span>{% endif %}</td>
+        <td style="font-size:0.8rem;color:var(--text-light);">{{ w.created_at|date:"M j, g:i A" }}</td>
+        <td>{% if not w.is_active %}<a href="{% url 'manage:weather_activate' w.pk %}" class="btn btn-sm btn-outline">Reactivate</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

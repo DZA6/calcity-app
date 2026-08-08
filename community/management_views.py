@@ -1,0 +1,337 @@
+"""
+CalCity Management Dashboard — custom admin views.
+
+Simple, modern UI for daily content management:
+- Dashboard with stats and quick actions
+- Article editor with image/video preview
+- Weather panel
+- Alerts panel
+- Events panel
+
+Access at /manage/ (requires Django admin login).
+"""
+import json
+
+from django.contrib.admin.views.decorators import staff_member_required
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
+
+from .models import Alert, Business, CommunityTip, Event, NewsItem, School, WeatherInfo
+
+# ── Dashboard ──────────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def dashboard(request):
+    """Main management dashboard with stats and quick actions."""
+    ctx = {
+        "news_count": NewsItem.objects.count(),
+        "news_approved": NewsItem.objects.filter(is_approved=True).count(),
+        "active_alerts": Alert.objects.filter(is_active=True).count(),
+        "upcoming_events": Event.objects.filter(
+            is_approved=True, start_date__gte=timezone.now()
+        ).count(),
+        "weather_count": WeatherInfo.objects.count(),
+        "latest_weather": WeatherInfo.objects.filter(is_active=True).first(),
+        "recent_news": NewsItem.objects.order_by("-created_at")[:8],
+        "recent_alerts": Alert.objects.order_by("-created_at")[:5],
+        "recent_events": Event.objects.filter(is_approved=True).order_by("start_date")[:5],
+        "pending_tips": CommunityTip.objects.filter(is_approved=False).count(),
+    }
+    return render(request, "manage/dashboard.html", ctx)
+
+
+# ── News / Articles ────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def news_list(request):
+    """List all news articles with filters."""
+    category = request.GET.get("category", "")
+    status = request.GET.get("status", "all")  # all, approved, pending
+    page_num = request.GET.get("page", 1)
+
+    qs = NewsItem.objects.all()
+    if category:
+        qs = qs.filter(category=category)
+    if status == "approved":
+        qs = qs.filter(is_approved=True)
+    elif status == "pending":
+        qs = qs.filter(is_approved=False)
+
+    paginator = Paginator(qs.order_by("-created_at"), 20)
+    page = paginator.get_page(page_num)
+
+    ctx = {
+        "articles": page,
+        "categories": NewsItem.CATEGORY_CHOICES,
+        "current_category": category,
+        "current_status": status,
+    }
+    return render(request, "manage/news_list.html", ctx)
+
+
+@staff_member_required
+def news_edit(request, pk=None):
+    """Create or edit a news article."""
+    article = None
+    if pk:
+        article = get_object_or_404(NewsItem, pk=pk)
+
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        content = request.POST.get("content", "").strip()
+        category = request.POST.get("category", "general")
+        source_url = request.POST.get("source_url", "").strip()
+        is_approved = request.POST.get("is_approved") == "on"
+        featured = request.POST.get("featured") == "on"
+
+        if not title or not content:
+            ctx = _news_form_context(article, request)
+            ctx["error"] = "Title and content are required."
+            return render(request, "manage/news_edit.html", ctx)
+
+        if article:
+            article.title = title
+            article.content = content
+            article.category = category
+            article.source_url = source_url
+            article.is_approved = is_approved
+            article.featured = featured
+        else:
+            article = NewsItem(
+                title=title,
+                content=content,
+                category=category,
+                source_url=source_url,
+                is_approved=is_approved,
+                featured=featured,
+            )
+
+        # Handle image upload
+        if request.FILES.get("image"):
+            article.image = request.FILES["image"]
+
+        # Handle video upload
+        if request.FILES.get("video"):
+            article.video = request.FILES["video"]
+
+        article.save()
+        return redirect("manage:news_list")
+
+    ctx = _news_form_context(article, request)
+    return render(request, "manage/news_edit.html", ctx)
+
+
+def _news_form_context(article, request):
+    """Build context for the news edit form."""
+    ctx = {
+        "article": article,
+        "categories": NewsItem.CATEGORY_CHOICES,
+        "preview_image_url": article.image.url if article and article.image else None,
+        "preview_video_url": article.video.url if article and article.video else None,
+    }
+    if article:
+        ctx["preview_json"] = json.dumps({
+            "title": article.title,
+            "category": article.category,
+            "is_approved": article.is_approved,
+            "featured": article.featured,
+        })
+    return ctx
+
+
+@staff_member_required
+def news_delete(request, pk):
+    """Delete a news article."""
+    article = get_object_or_404(NewsItem, pk=pk)
+    if request.method == "POST":
+        article.delete()
+        return redirect("manage:news_list")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": article,
+        "type_name": "News Article",
+        "cancel_url": reverse("manage:news_list"),
+    })
+
+
+@staff_member_required
+def news_toggle(request, pk, field):
+    """AJAX: toggle is_approved or featured on a news item."""
+    article = get_object_or_404(NewsItem, pk=pk)
+    if field == "approve":
+        article.is_approved = not article.is_approved
+    elif field == "feature":
+        article.featured = not article.featured
+    article.save()
+    return JsonResponse({"ok": True, "is_approved": article.is_approved, "featured": article.featured})
+
+
+# ── Weather ─────────────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def weather_panel(request):
+    """Manage weather updates — edit the latest or create new."""
+    latest = WeatherInfo.objects.filter(is_active=True).first()
+    all_weather = WeatherInfo.objects.order_by("-created_at")[:10]
+
+    if request.method == "POST":
+        headline = request.POST.get("headline", "").strip()
+        detail = request.POST.get("detail", "").strip()
+        temp_high = request.POST.get("temperature_high", "")
+        temp_low = request.POST.get("temperature_low", "")
+        humidity = request.POST.get("humidity", "").strip()
+        wind = request.POST.get("wind", "").strip()
+        fire_risk = request.POST.get("fire_risk", "").strip()
+        sunrise = request.POST.get("sunrise", "").strip()
+        sunset = request.POST.get("sunset", "").strip()
+        is_active = request.POST.get("is_active") == "on"
+
+        if not headline:
+            ctx = _weather_context(latest, all_weather)
+            ctx["error"] = "Headline is required."
+            return render(request, "manage/weather.html", ctx)
+
+        # If updating the latest and it's active, deactivate old ones
+        if is_active and latest:
+            WeatherInfo.objects.filter(is_active=True).exclude(pk=latest.pk).update(is_active=False)
+
+        w = WeatherInfo(
+            headline=headline,
+            detail=detail,
+            temperature_high=int(temp_high) if temp_high else None,
+            temperature_low=int(temp_low) if temp_low else None,
+            humidity=humidity,
+            wind=wind,
+            fire_risk=fire_risk,
+            sunrise=sunrise,
+            sunset=sunset,
+            is_active=is_active,
+        )
+        w.save()
+        return redirect("manage:weather")
+
+    ctx = _weather_context(latest, all_weather)
+    return render(request, "manage/weather.html", ctx)
+
+
+def _weather_context(latest, all_weather):
+    return {
+        "weather": latest,
+        "all_weather": all_weather,
+    }
+
+
+@staff_member_required
+def weather_activate(request, pk):
+    """Activate a specific weather update (deactivates others)."""
+    w = get_object_or_404(WeatherInfo, pk=pk)
+    WeatherInfo.objects.filter(is_active=True).update(is_active=False)
+    w.is_active = True
+    w.save()
+    return redirect("manage:weather")
+
+
+# ── Alerts ──────────────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def alerts_panel(request):
+    """Manage community alerts."""
+    alerts = Alert.objects.order_by("-created_at")
+    ctx = {"alerts": alerts, "severities": Alert.SEVERITY_CHOICES}
+    return render(request, "manage/alerts.html", ctx)
+
+
+@staff_member_required
+def alert_edit(request, pk=None):
+    """Create or edit an alert."""
+    alert = None
+    if pk:
+        alert = get_object_or_404(Alert, pk=pk)
+
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        message = request.POST.get("message", "").strip()
+        severity = request.POST.get("severity", "info")
+        is_active = request.POST.get("is_active") == "on"
+
+        if not title or not message:
+            ctx = _alert_form_context(alert)
+            ctx["error"] = "Title and message are required."
+            return render(request, "manage/alert_edit.html", ctx)
+
+        if alert:
+            alert.title = title
+            alert.message = message
+            alert.severity = severity
+            alert.is_active = is_active
+        else:
+            alert = Alert(
+                title=title, message=message, severity=severity, is_active=is_active
+            )
+
+        if request.FILES.get("image"):
+            alert.image = request.FILES["image"]
+
+        alert.save()
+        return redirect("manage:alerts")
+
+    ctx = _alert_form_context(alert)
+    return render(request, "manage/alert_edit.html", ctx)
+
+
+def _alert_form_context(alert):
+    ctx = {"alert": alert, "severities": Alert.SEVERITY_CHOICES}
+    if alert and alert.image:
+        ctx["preview_image_url"] = alert.image.url
+    return ctx
+
+
+@staff_member_required
+def alert_toggle(request, pk):
+    """AJAX: toggle alert active status."""
+    alert = get_object_or_404(Alert, pk=pk)
+    alert.is_active = not alert.is_active
+    alert.save()
+    return JsonResponse({"ok": True, "is_active": alert.is_active})
+
+
+@staff_member_required
+def alert_delete(request, pk):
+    """Delete an alert."""
+    alert = get_object_or_404(Alert, pk=pk)
+    if request.method == "POST":
+        alert.delete()
+        return redirect("manage:alerts")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": alert,
+        "type_name": "Alert",
+        "cancel_url": reverse("manage:alerts"),
+    })
+
+
+# ── Events ──────────────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def events_list(request):
+    """List community events."""
+    status = request.GET.get("status", "all")
+    qs = Event.objects.all()
+    if status == "approved":
+        qs = qs.filter(is_approved=True)
+    elif status == "pending":
+        qs = qs.filter(is_approved=False)
+
+    paginator = Paginator(qs.order_by("start_date"), 20)
+    page_num = request.GET.get("page", 1)
+    page = paginator.get_page(page_num)
+
+    ctx = {"events": page, "current_status": status}
+    return render(request, "manage/events_list.html", ctx)

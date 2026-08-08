@@ -1,0 +1,121 @@
+{% extends "manage/base.html" %}
+{% block title %}Articles — CalCity Manage{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:4px;">Articles</h1>
+    <p class="page-subtitle" style="margin-bottom:0;">Manage news articles, stories, and updates</p>
+  </div>
+  <a href="{% url 'manage:news_edit' %}" class="btn btn-primary">+ New Article</a>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom:20px;padding:12px 16px;">
+  <form method="get" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <select name="category" style="width:auto;min-width:160px;">
+      <option value="">All Categories</option>
+      {% for val, label in categories %}
+      <option value="{{ val }}" {% if current_category == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" style="width:auto;min-width:130px;">
+      <option value="all" {% if current_status == 'all' %}selected{% endif %}>All Status</option>
+      <option value="approved" {% if current_status == 'approved' %}selected{% endif %}>Approved</option>
+      <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+    </select>
+    <button type="submit" class="btn btn-sm btn-outline">Filter</button>
+    {% if current_category or current_status != 'all' %}
+    <a href="{% url 'manage:news_list' %}" class="btn btn-sm" style="color:var(--text-light);">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if articles %}
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Media</th>
+          <th>Status</th>
+          <th>Featured</th>
+          <th>Date</th>
+          <th style="width:60px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for article in articles %}
+      <tr>
+        <td>
+          <a href="{% url 'manage:news_edit' article.pk %}" style="color:var(--text);text-decoration:none;font-weight:500;">
+            {{ article.title|truncatechars:55 }}
+          </a>
+        </td>
+        <td><span class="badge badge-neutral">{{ article.get_category_display }}</span></td>
+        <td style="font-size:0.85rem;">
+          {% if article.image %}&#128247;{% endif %}
+          {% if article.video %}&#127910;{% endif %}
+          {% if not article.image and not article.video %}&mdash;{% endif %}
+        </td>
+        <td>
+          <label class="toggle" onclick="toggleField({{ article.pk }}, 'approve')">
+            <input type="checkbox" {% if article.is_approved %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </td>
+        <td>
+          <label class="toggle" onclick="toggleField({{ article.pk }}, 'feature')">
+            <input type="checkbox" {% if article.featured %}checked{% endif %}>
+            <span class="slider"></span>
+          </label>
+        </td>
+        <td style="font-size:0.8rem;color:var(--text-light);white-space:nowrap;">{{ article.created_at|date:"M j" }}</td>
+        <td>
+          <a href="{% url 'manage:news_delete' article.pk %}" style="color:var(--danger);text-decoration:none;font-size:0.85rem;" title="Delete">&#128465;</a>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if articles.has_other_pages %}
+<div class="pagination">
+  {% if articles.has_previous %}
+  <a href="?page={{ articles.previous_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">&laquo; Prev</a>
+  {% endif %}
+  <span class="current">Page {{ articles.number }} of {{ articles.paginator.num_pages }}</span>
+  {% if articles.has_next %}
+  <a href="?page={{ articles.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">&#128240;</div>
+    <p>No articles found.</p>
+    <a href="{% url 'manage:news_edit' %}" class="btn btn-primary" style="margin-top:12px;">Write First Article</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleField(pk, field) {
+  fetch("{% url 'manage:news_list' %}" + pk + "/toggle/" + field + "/", {
+    method: "POST",
+    headers: {"X-CSRFToken": "{{ csrf_token }}"}
+  }).then(r => r.json()).then(d => {
+    if (!d.ok) location.reload();
+  });
+}
+</script>
+{% endblock %}

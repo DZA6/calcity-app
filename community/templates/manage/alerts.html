@@ -1,0 +1,65 @@
+{% extends "manage/base.html" %}
+{% block title %}Alerts — CalCity Manage{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:4px;">Alerts</h1>
+    <p class="page-subtitle" style="margin-bottom:0;">Manage emergency, warning, and info alerts for the community</p>
+  </div>
+  <a href="{% url 'manage:alert_edit' %}" class="btn btn-primary">+ New Alert</a>
+</div>
+
+{% if alerts %}
+<div class="card" style="padding:0;">
+  {% for alert in alerts %}
+  <div class="severity-{{ alert.severity }}" style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:16px;{% if not forloop.last %}border-bottom:1px solid var(--border);{% endif %}">
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <strong>{{ alert.title }}</strong>
+        <span class="badge badge-{% if alert.severity == 'emergency' %}danger{% elif alert.severity == 'warning' %}warning{% else %}info{% endif %}">
+          {{ alert.get_severity_display }}
+        </span>
+        {% if alert.is_active %}
+        <span class="badge badge-success">Active</span>
+        {% else %}
+        <span class="badge badge-neutral">Inactive</span>
+        {% endif %}
+      </div>
+      <div style="font-size:0.88rem;color:var(--text-light);margin-bottom:4px;">{{ alert.message|truncatechars:200 }}</div>
+      <div style="font-size:0.75rem;color:var(--text-light);">{{ alert.created_at|date:"M j, Y g:i A" }}</div>
+    </div>
+    <div class="btn-group" style="flex-shrink:0;">
+      <label class="toggle" onclick="toggleAlert({{ alert.pk }})">
+        <input type="checkbox" {% if alert.is_active %}checked{% endif %}>
+        <span class="slider"></span>
+      </label>
+      <a href="{% url 'manage:alert_edit' alert.pk %}" class="btn btn-sm btn-outline">Edit</a>
+      <a href="{% url 'manage:alert_delete' alert.pk %}" class="btn btn-sm" style="color:var(--danger);">&#128465;</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">&#9888;</div>
+    <p>No alerts yet. Post one to notify the community.</p>
+    <a href="{% url 'manage:alert_edit' %}" class="btn btn-primary" style="margin-top:12px;">Create First Alert</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAlert(pk) {
+  fetch("/manage/alerts/" + pk + "/toggle/", {
+    method: "POST",
+    headers: {"X-CSRFToken": "{{ csrf_token }}"}
+  }).then(r => r.json()).then(d => {
+    if (d.ok) location.reload();
+  });
+}
+</script>
+{% endblock %}

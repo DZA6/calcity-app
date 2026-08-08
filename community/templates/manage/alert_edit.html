@@ -1,0 +1,73 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if alert %}Edit Alert{% else %}New Alert{% endif %} — CalCity Manage{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{% url 'manage:alerts' %}" style="color:var(--text-light);text-decoration:none;font-size:1.2rem;">&larr;</a>
+  <h1 class="page-title" style="margin-bottom:0;">{% if alert %}Edit Alert{% else %}New Alert{% endif %}</h1>
+</div>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card">
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="form-group">
+    <label>Severity</label>
+    <select name="severity">
+      {% for val, label in severities %}
+      <option value="{{ val }}" {% if alert.severity == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Title <span style="color:var(--danger);">*</span></label>
+    <input type="text" name="title" value="{{ alert.title|default:'' }}" placeholder="e.g. Boil Water Advisory" required maxlength="200">
+  </div>
+
+  <div class="form-group">
+    <label>Message <span style="color:var(--danger);">*</span></label>
+    <textarea name="message" placeholder="Alert details..." required>{{ alert.message|default:'' }}</textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Image <span class="help">Optional alert graphic (JPEG/PNG)</span></label>
+    <label class="file-input">
+      <input type="file" name="image" accept="image/jpeg,image/png,image/webp" onchange="previewFile(this)">
+      <div class="upload-hint">&#128247; Click to upload an alert image</div>
+    </label>
+    {% if preview_image_url %}
+    <div class="preview-box" id="image-preview"><img src="{{ preview_image_url }}" alt="Preview"></div>
+    {% else %}
+    <div class="preview-box" id="image-preview" style="display:none;"></div>
+    {% endif %}
+  </div>
+
+  <div class="checkbox-row">
+    <input type="checkbox" name="is_active" id="id_active" {% if not alert or alert.is_active %}checked{% endif %}>
+    <label for="id_active">Active — visible in the app</label>
+  </div>
+
+  <div class="btn-group" style="margin-top:24px;">
+    <button type="submit" class="btn btn-primary">
+      {% if alert %}Save Changes{% else %}Post Alert{% endif %}
+    </button>
+    <a href="{% url 'manage:alerts' %}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewFile(input) {
+  const preview = document.getElementById('image-preview');
+  const file = input.files[0];
+  if (!file) { preview.style.display = 'none'; preview.innerHTML = ''; return; }
+  preview.style.display = 'flex';
+  preview.innerHTML = '<img src="' + URL.createObjectURL(file) + '" alt="Preview">';
+}
+</script>
+{% endblock %}
