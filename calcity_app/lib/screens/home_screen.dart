@@ -288,13 +288,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary, letterSpacing: 0.5)),
             ),
 
-            _drawerToggle(cs, Icons.article_outlined, 'News', settings.showNews, (v) => settings.setShowNews(v)),
-            _drawerToggle(cs, Icons.event_outlined, 'Events', settings.showEvents, (v) => settings.setShowEvents(v)),
-            _drawerToggle(cs, Icons.store_outlined, 'Businesses', settings.showBusinesses, (v) => settings.setShowBusinesses(v)),
-            _drawerToggle(cs, Icons.school_outlined, 'Schools', settings.showSchools, (v) => settings.setShowSchools(v)),
-            _drawerToggle(cs, Icons.person_outlined, 'Freelancers', settings.showFreelancers, (v) => settings.setShowFreelancers(v)),
-            _drawerToggle(cs, Icons.campaign_outlined, 'Alerts', settings.showAlerts, (v) => settings.setShowAlerts(v)),
-            _drawerToggle(cs, Icons.account_balance_outlined, 'City Council', settings.showCouncil, (v) => settings.setShowCouncil(v)),
+            _drawerToggle(cs, Icons.article_outlined, 'News', settings.showNews, (v) => settings.setShowNews(v), color: const Color(0xFF00FF41)),
+            _drawerToggle(cs, Icons.event_outlined, 'Events', settings.showEvents, (v) => settings.setShowEvents(v), color: const Color(0xFF00E5FF)),
+            _drawerToggle(cs, Icons.store_outlined, 'Businesses', settings.showBusinesses, (v) => settings.setShowBusinesses(v), color: const Color(0xFFFFB300)),
+            _drawerToggle(cs, Icons.school_outlined, 'Schools', settings.showSchools, (v) => settings.setShowSchools(v), color: const Color(0xFFFF5252)),
+            _drawerToggle(cs, Icons.person_outlined, 'Freelancers', settings.showFreelancers, (v) => settings.setShowFreelancers(v), color: const Color(0xFFE040FB)),
+            _drawerToggle(cs, Icons.campaign_outlined, 'Alerts', settings.showAlerts, (v) => settings.setShowAlerts(v), color: const Color(0xFFFF6D00)),
+            _drawerToggle(cs, Icons.account_balance_outlined, 'City Council', settings.showCouncil, (v) => settings.setShowCouncil(v), color: const Color(0xFF76FF03)),
 
             // Sign In / Sign Up / Profile
             Consumer<AuthProvider>(
@@ -368,10 +368,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  Widget _drawerToggle(ColorScheme cs, IconData icon, String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _drawerToggle(ColorScheme cs, IconData icon, String label, bool value, ValueChanged<bool> onChanged, {Color? color}) {
+    final iconColor = color ?? cs.primary;
     return SwitchListTile(
       title: Text(label, style: const TextStyle(fontSize: 14)),
-      secondary: Icon(icon, size: 20, color: value ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5)),
+      secondary: Icon(icon, size: 20, color: value ? iconColor : cs.onSurfaceVariant.withValues(alpha: 0.5)),
       value: value,
       onChanged: onChanged,
       dense: true,

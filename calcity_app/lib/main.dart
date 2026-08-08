@@ -52,37 +52,37 @@ class CalCityApp extends StatelessWidget {
     );
   }
 
-  // ---- Dark theme (default) ----
+  // ---- Dark theme (neon green on black) ----
   ThemeData _buildDarkTheme() {
     const cs = ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFFB8573E),
-      onPrimary: Color(0xFFFFFFFF),
-      primaryContainer: Color(0xFF8B3A26),
-      onPrimaryContainer: Color(0xFFFFDBD0),
-      secondary: Color(0xFFD4956B),
-      onSecondary: Color(0xFF3E1F0A),
-      secondaryContainer: Color(0xFF5C381D),
-      onSecondaryContainer: Color(0xFFFFDCC2),
-      tertiary: Color(0xFF8C9E63),
-      onTertiary: Color(0xFF1D2600),
-      tertiaryContainer: Color(0xFF343D15),
-      onTertiaryContainer: Color(0xFFD8E8A0),
-      error: Color(0xFFFFB4AB),
+      primary: Color(0xFF00FF41),
+      onPrimary: Color(0xFF000000),
+      primaryContainer: Color(0xFF003D10),
+      onPrimaryContainer: Color(0xFF7BFF90),
+      secondary: Color(0xFF39FF14),
+      onSecondary: Color(0xFF000000),
+      secondaryContainer: Color(0xFF003D10),
+      onSecondaryContainer: Color(0xFF7BFF90),
+      tertiary: Color(0xFF00E5FF),
+      onTertiary: Color(0xFF000000),
+      tertiaryContainer: Color(0xFF003540),
+      onTertiaryContainer: Color(0xFF82F3FF),
+      error: Color(0xFFFF5252),
       errorContainer: Color(0xFF93000A),
-      onError: Color(0xFF690005),
+      onError: Color(0xFF000000),
       onErrorContainer: Color(0xFFFFDAD6),
-      surface: Color(0xFF1E1E1E),
-      onSurface: Color(0xFFE3E2E6),
-      surfaceVariant: Color(0xFF2C2C2C),
-      onSurfaceVariant: Color(0xFFC4C6D0),
-      outline: Color(0xFF3A3A3C),
-      outlineVariant: Color(0xFF2C2C2C),
-      inverseSurface: Color(0xFFE3E2E6),
-      onInverseSurface: Color(0xFF1E1E1E),
-      inversePrimary: Color(0xFFB8573E),
+      surface: Color(0xFF0A0A0A),
+      onSurface: Color(0xFFE0FFE0),
+      surfaceVariant: Color(0xFF1A1A1A),
+      onSurfaceVariant: Color(0xFFA0FFA0),
+      outline: Color(0xFF004D1A),
+      outlineVariant: Color(0xFF1A2A1A),
+      inverseSurface: Color(0xFFE0FFE0),
+      onInverseSurface: Color(0xFF0A0A0A),
+      inversePrimary: Color(0xFF00FF41),
       shadow: Color(0xFF000000),
-      surfaceTint: Color(0xFFB8573E),
+      surfaceTint: Color(0xFF00FF41),
     );
 
     return ThemeData(
@@ -345,7 +345,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Explore')),
+      appBar: AppBar(
+        title: Image.asset('assets/images/calcity_logo.png', height: 36),
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
