@@ -7,6 +7,7 @@ from environment variables (WSGI file on PA), with dev-only fallbacks.
 """
 
 import os
+import logging
 from datetime import timedelta
 from pathlib import Path
 
@@ -123,6 +124,29 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+# ── Sentry error tracking ───────────────────────────────────────────
+# No-op unless SENTRY_DSN is set (add yours on PA: Web tab -> WSGI/env,
+# os.environ["SENTRY_DSN"] = "https://<key>@o<org>.ingest.sentry.io/<proj>")
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            LoggingIntegration(
+                level=logging.INFO,       # capture info logs
+                event_level=logging.ERROR,  # only send ERROR+ as events
+            ),
+        ],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+        environment="production" if not DEBUG else "development",
+    )
 
 # ── django-axes (brute-force lockout) ───────────────────────────────
 # Locks an IP out after 5 failed logins for 15 minutes (applies to the
