@@ -10,9 +10,6 @@ name: Build APK
 on:
   push:
     branches: [main]
-    paths:
-      - 'calcity_app/**'
-      - '!calcity_app/build/**'
   workflow_dispatch:
 
 jobs:
