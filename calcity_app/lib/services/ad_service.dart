@@ -19,6 +19,18 @@ class AdService {
   factory AdService() => _instance;
   AdService._();
 
+  // Build-time feature gates (--dart-define):
+  //   ADS_ENABLED=true|false            — master switch for ALL ad views.
+  //   INTERSTITIAL_ENABLED=true|false   — full-screen interstitials only.
+  // Interstitials default OFF: their Activity transition over the Flutter
+  // window is the risky piece (Android 15 edge-to-edge + older AdMob SDKs
+  // can corrupt the host window layout — the "app squeezed to top-left
+  // corner" bug). The passive banner stays on.
+  static const bool _adsEnabled =
+      bool.fromEnvironment('ADS_ENABLED', defaultValue: true);
+  static const bool _interstitialEnabled =
+      bool.fromEnvironment('INTERSTITIAL_ENABLED', defaultValue: false);
+
   // Test ad units (Google's official sample IDs — safe for dev builds)
   static const String _testBanner = 'ca-app-pub-3940256099942544/6300978111';
   static const String _testInterstitial = 'ca-app-pub-3940256099942544/1033173712';
@@ -49,7 +61,7 @@ class AdService {
 
   Future<void> initialize() async {
     if (_initialized) return;
-    if (!_isSupportedPlatform) {
+    if (!_adsEnabled || !_isSupportedPlatform) {
       _initialized = true;
       return;
     }
@@ -64,8 +76,11 @@ class AdService {
   // ── Banner ────────────────────────────────────────────────────────
 
   /// Load the banner once (idempotent). Widgets rebuild via [bannerState].
+  /// MUST be called after the first frame (the AdBanner widget does this in
+  /// its own initState) — creating the platform view before runApp() can
+  /// break view layout on some devices.
   void ensureBanner() {
-    if (!_isSupportedPlatform || _bannerRequested) return;
+    if (!_adsEnabled || !_isSupportedPlatform || _bannerRequested) return;
     _bannerRequested = true;
 
     _bannerAd = BannerAd(
@@ -89,8 +104,12 @@ class AdService {
   // ── Interstitial ──────────────────────────────────────────────────
 
   /// Preload an interstitial so it is ready when the user navigates.
+  /// No-op unless INTERSTITIAL_ENABLED=true at build time.
   void preloadInterstitial() {
-    if (!_isSupportedPlatform || _interstitialAd != null) return;
+    if (!_interstitialEnabled || !_adsEnabled || !_isSupportedPlatform ||
+        _interstitialAd != null) {
+      return;
+    }
     InterstitialAd.load(
       adUnitId: interstitialUnitId,
       request: const AdRequest(),
@@ -113,8 +132,9 @@ class AdService {
   }
 
   /// Show the interstitial if one is loaded AND the cooldown has passed.
-  /// Returns true if an ad was shown.
+  /// Returns true if an ad was shown. No-op when interstitials are disabled.
   bool showInterstitialIfReady({Duration cooldown = const Duration(minutes: 2)}) {
+    if (!_interstitialEnabled || !_adsEnabled) return false;
     final ad = _interstitialAd;
     if (ad == null) {
       preloadInterstitial();

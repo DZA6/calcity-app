@@ -18,9 +18,12 @@ import 'screens/deals_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
+    // SDK init only — no ad views are created here. Banner and interstitial
+    // views are created AFTER the first frame (see AdBanner.initState and
+    // MainShell's post-frame callback). Creating platform views before
+    // runApp() can corrupt view layout on some devices (the "app squeezed
+    // into the top-left corner" bug).
     await AdService().initialize();
-    AdService().ensureBanner();
-    AdService().preloadInterstitial();
   } catch (_) {
     // Ads unavailable on this platform
   }
@@ -260,6 +263,16 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   int _tabSwitches = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Preload the interstitial only after the first frame is on screen —
+    // never before runApp. No-op unless INTERSTITIAL_ENABLED=true.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AdService().preloadInterstitial();
+    });
+  }
 
   static const _screens = <Widget>[
     HomeScreen(),
