@@ -228,7 +228,7 @@ class ApiService {
   Future<List<NewsItem>> fetchNews() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/api/news'))
+          .get(Uri.parse('$baseUrl/api/news?limit=50'))
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -246,7 +246,7 @@ class ApiService {
   Future<List<EventItem>> fetchEvents() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/api/events'))
+          .get(Uri.parse('$baseUrl/api/events?limit=30'))
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -264,7 +264,7 @@ class ApiService {
   Future<List<BusinessItem>> fetchBusinesses() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/api/businesses'))
+          .get(Uri.parse('$baseUrl/api/businesses?limit=50'))
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -282,7 +282,7 @@ class ApiService {
   Future<List<AlertItem>> fetchAlerts() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/api/alerts'))
+          .get(Uri.parse('$baseUrl/api/alerts?limit=20'))
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -300,7 +300,7 @@ class ApiService {
   Future<List<CouncilAgendaItem>> fetchCouncilAgendas() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/api/council-agendas'))
+          .get(Uri.parse('$baseUrl/api/council-agendas?limit=20'))
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -382,7 +382,7 @@ class ApiService {
   Future<List<SchoolItem>> fetchSchools() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/api/schools'))
+          .get(Uri.parse('$baseUrl/api/schools?limit=20'))
           .timeout(_timeout);
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body) as List<dynamic>;

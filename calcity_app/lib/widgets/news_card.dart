@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/content.dart';
 
 class NewsCard extends StatelessWidget {
@@ -29,14 +30,12 @@ class NewsCard extends StatelessWidget {
             if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Image.network(
-                  item.imageUrl!,
+                child: CachedNetworkImage(
+                  imageUrl: item.imageUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _imagePlaceholder(cs),
-                  loadingBuilder: (ctx, child, progress) {
-                    if (progress == null) return child;
-                    return _imagePlaceholder(cs);
-                  },
+                  errorWidget: (_, __, ___) => _imagePlaceholder(cs),
+                  placeholder: (_, __) => _imagePlaceholder(cs),
+                  memCacheWidth: 640,  // cap memory: no full-res decode on cheap phones
                 ),
               ),
             // Content

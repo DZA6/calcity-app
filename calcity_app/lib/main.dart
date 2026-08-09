@@ -268,38 +268,48 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  // Lazy tab loading: only build the selected screen.
+  // IndexedStack built ALL tabs at once — 6 screens + 9 API calls
+  // on app open, which crashed cheap phones. This builds one at a time
+  // and keeps previously-visited tabs alive.
+  final Map<int, Widget> _tabCache = {};
   int _selectedIndex = 0;
-  int _tabSwitches = 0;
+
+  Widget _buildTab(int index) {
+    if (!_tabCache.containsKey(index)) {
+      _tabCache[index] = _buildScreen(index);
+    }
+    return _tabCache[index]!;
+  }
+
+  Widget _buildScreen(int index) {
+    switch (index) {
+      case 0: return const HomeScreen();
+      case 1: return const ExploreScreen();
+      case 2: return const BusinessesScreen();
+      case 3: return const AlertsScreen();
+      case 4: return const DealsScreen();
+      case 5: return const ConversationsScreen();
+      default: return const HomeScreen();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    // Only build the Home tab initially — the rest load lazily on first tap.
+    _tabCache[0] = const HomeScreen();
   }
-
-  static const _screens = <Widget>[
-    HomeScreen(),
-    ExploreScreen(),
-    BusinessesScreen(),
-    AlertsScreen(),
-    DealsScreen(),
-    ConversationsScreen(),
-  ];
 
   void _onDestinationSelected(int i) {
     if (i == _selectedIndex) return;
     setState(() => _selectedIndex = i);
-
-    // Interstitial every 3rd tab switch (AdService enforces a cooldown too)
-    _tabSwitches++;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: _buildTab(_selectedIndex),
       bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onDestinationSelected,
