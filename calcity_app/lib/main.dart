@@ -30,7 +30,11 @@ void main() async {
     // Ads unavailable on this platform
   }
   // Push notifications (no-op until Firebase is configured)
-  await PushService().initialize();
+  try {
+    await PushService().initialize();
+  } catch (_) {
+    // Firebase/Play Services unavailable on this device
+  }
   runApp(const CalCityApp());
 }
 
@@ -51,6 +55,17 @@ class CalCityApp extends StatelessWidget {
           child: MaterialApp(
             title: 'Cal City',
             debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              ErrorWidget.builder = (details) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text('Something went wrong.\nPull to refresh.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                ),
+              );
+              return child ?? const SizedBox.shrink();
+            },
             theme: _buildLightTheme(),
             darkTheme: _buildDarkTheme(),
             themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,

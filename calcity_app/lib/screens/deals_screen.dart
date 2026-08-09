@@ -52,7 +52,7 @@ class DealsScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (discount != null && (discount as String).isNotEmpty)
+                                if (discount != null && discount.toString().isNotEmpty)
                                   Container(
                                     margin: const EdgeInsets.only(bottom: 4),
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

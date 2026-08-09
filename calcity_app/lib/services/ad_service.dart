@@ -27,7 +27,7 @@ class AdService {
   // can corrupt the host window layout — the "app squeezed to top-left
   // corner" bug). The passive banner stays on.
   static const bool _adsEnabled =
-      bool.fromEnvironment('ADS_ENABLED', defaultValue: true);
+      bool.fromEnvironment('ADS_ENABLED', defaultValue: false);  // disabled by default for cheap devices
   static const bool _interstitialEnabled =
       bool.fromEnvironment('INTERSTITIAL_ENABLED', defaultValue: false);
 
