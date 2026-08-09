@@ -3,10 +3,8 @@ import 'package:provider/provider.dart';
 import 'providers/content_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
-import 'services/ad_service.dart';
 import 'services/api_service.dart';
 import 'services/push_service.dart';
-import 'widgets/ad_banner.dart';
 import 'models/content.dart';
 import 'screens/home_screen.dart';
 import 'screens/businesses_screen.dart';
@@ -19,16 +17,6 @@ import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    // SDK init only — no ad views are created here. Banner and interstitial
-    // views are created AFTER the first frame (see AdBanner.initState and
-    // MainShell's post-frame callback). Creating platform views before
-    // runApp() can corrupt view layout on some devices (the "app squeezed
-    // into the top-left corner" bug).
-    await AdService().initialize();
-  } catch (_) {
-    // Ads unavailable on this platform
-  }
   // Push notifications (no-op until Firebase is configured)
   try {
     await PushService().initialize();
@@ -286,11 +274,6 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    // Preload the interstitial only after the first frame is on screen —
-    // never before runApp. No-op unless INTERSTITIAL_ENABLED=true.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AdService().preloadInterstitial();
-    });
   }
 
   static const _screens = <Widget>[
@@ -308,9 +291,6 @@ class _MainShellState extends State<MainShell> {
 
     // Interstitial every 3rd tab switch (AdService enforces a cooldown too)
     _tabSwitches++;
-    if (_tabSwitches % 3 == 0) {
-      AdService().showInterstitialIfReady();
-    }
   }
 
   @override
@@ -320,12 +300,7 @@ class _MainShellState extends State<MainShell> {
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Banner ad above the nav bar — visible on all tabs
-          const AdBanner(),
-          NavigationBar(
+      bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onDestinationSelected,
             destinations: const [
@@ -361,8 +336,6 @@ class _MainShellState extends State<MainShell> {
               ),
             ],
           ),
-        ],
-      ),
     );
   }
 }

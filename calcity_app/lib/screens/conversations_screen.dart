@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../models/social.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
-import '../widgets/ad_banner.dart';
 import 'create_topic_screen.dart';
 import 'login_screen.dart';
 import 'topic_screen.dart';
@@ -106,7 +105,6 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               ],
             ),
           ),
-          const AdBanner(),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
