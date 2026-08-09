@@ -64,34 +64,39 @@ class ContentProvider extends ChangeNotifier {
   Future<void> refreshAll() async {
     _isLoading = true;
     _error = null;
-    notifyListeners(); // ONE notify: show spinner
+    notifyListeners();
 
-    final results = await Future.wait([
-      _api.fetchNews(),
-      _api.fetchEvents(),
-      _api.fetchBusinesses(),
-      _api.fetchAlerts(),
-      _api.fetchCouncilAgendas(),
-      _api.fetchWeather(),
-      _api.fetchSchools(),
-      _api.fetchFeatured(),
-      _api.fetchDeals(),
-    ]);
+    try {
+      final results = await Future.wait([
+        _api.fetchNews(),
+        _api.fetchEvents(),
+        _api.fetchBusinesses(),
+        _api.fetchAlerts(),
+        _api.fetchCouncilAgendas(),
+        _api.fetchWeather(),
+        _api.fetchSchools(),
+        _api.fetchFeatured(),
+        _api.fetchDeals(),
+      ]);
 
-    _news = (results[0] as List<NewsItem>?) ?? _news;
-    _events = (results[1] as List<EventItem>?) ?? _events;
-    _businesses = (results[2] as List<BusinessItem>?) ?? _businesses;
-    _alerts = (results[3] as List<AlertItem>?) ?? _alerts;
-    _councilAgendas = (results[4] as List<CouncilAgendaItem>?) ?? _councilAgendas;
-    if (results[5] is WeatherInfo) _weather = results[5] as WeatherInfo?;
-    _schools = (results[6] as List<SchoolItem>?) ?? _schools;
-    _featured = (results[7] as List<dynamic>?) ?? [];
-    _deals = (results[8] as List<dynamic>?) ?? [];
+      _news = (results[0] as List<NewsItem>?) ?? _news;
+      _events = (results[1] as List<EventItem>?) ?? _events;
+      _businesses = (results[2] as List<BusinessItem>?) ?? _businesses;
+      _alerts = (results[3] as List<AlertItem>?) ?? _alerts;
+      _councilAgendas = (results[4] as List<CouncilAgendaItem>?) ?? _councilAgendas;
+      if (results[5] is WeatherInfo) _weather = results[5] as WeatherInfo?;
+      _schools = (results[6] as List<SchoolItem>?) ?? _schools;
+      _featured = (results[7] as List<dynamic>?) ?? [];
+      _deals = (results[8] as List<dynamic>?) ?? [];
+    } catch (e) {
+      _error = 'Could not load content. Pull to retry.';
+      debugPrint('refreshAll error: $e');
+    }
 
     _rebuildCaches();
     _isLoading = false;
     _isInitialized = true;
-    notifyListeners(); // ONE notify: data ready
+    notifyListeners();
   }
 
   // ---- individual refreshes (for dedicated screens) ----
