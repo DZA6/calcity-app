@@ -92,6 +92,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                 itemType: 'event',
                                 content: item.description ??
                                     'No description available.',
+                                itemId: item.id,
                                 metadata: {
                                   if (item.startDate != null)
                                     'start_date':

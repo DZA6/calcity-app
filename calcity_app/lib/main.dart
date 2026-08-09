@@ -14,6 +14,7 @@ import 'screens/freelancers_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/deals_screen.dart';
+import 'screens/conversations_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +45,7 @@ class CalCityApp extends StatelessWidget {
         return MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => ContentProvider()),
-            ChangeNotifierProvider(create: (_) => AuthProvider()),
+            ChangeNotifierProvider(create: (_) => AuthProvider()..load()),
           ],
           child: MaterialApp(
             title: 'Cal City',
@@ -280,6 +281,7 @@ class _MainShellState extends State<MainShell> {
     BusinessesScreen(),
     AlertsScreen(),
     DealsScreen(),
+    ConversationsScreen(),
   ];
 
   void _onDestinationSelected(int i) {
@@ -333,6 +335,11 @@ class _MainShellState extends State<MainShell> {
                 icon: Icon(Icons.local_offer_outlined),
                 selectedIcon: Icon(Icons.local_offer),
                 label: 'Deals',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.forum_outlined),
+                selectedIcon: Icon(Icons.forum),
+                label: 'Community',
               ),
             ],
           ),

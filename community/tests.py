@@ -13,9 +13,21 @@ import re
 from datetime import datetime
 
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, Client, override_settings
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient
 
-from community.models import Alert, Business, Event, NewsItem, School
+from community.models import (
+    Alert,
+    Business,
+    Comment,
+    DiscussionTopic,
+    Event,
+    NewsItem,
+    Reaction,
+    School,
+)
 from axes.models import AccessAttempt, AccessLog
 
 
@@ -342,3 +354,210 @@ class ConfigTests(TestCase):
     def test_sentry_noop_without_dsn(self):
         from django.conf import settings
         self.assertEqual(settings.SENTRY_DSN, "")
+
+
+# ── Social: topics, comments, reactions ──────────────────────────────
+
+class SocialTests(TestCase):
+    """Discussion topics, comments on any content, like/dislike toggles."""
+
+    def setUp(self):
+        self.c = APIClient()
+        self.user = User.objects.create_user(
+            "socialuser", email="social@x.com", password="CorrectHorse1!"
+        )
+        self.token = Token.objects.create(user=self.user)
+        self.news = NewsItem.objects.create(
+            title="Test article", content="Body text", is_approved=True
+        )
+        self.event = Event.objects.create(
+            title="Test event", description="Come!", location="Park",
+            start_date="2026-09-01T18:00:00Z", category="community",
+        )
+        self.topic = DiscussionTopic.objects.create(
+            title="First topic", body="Hello", author=self.user
+        )
+        self.news_ct = ContentType.objects.get_for_model(NewsItem)
+
+    def _auth(self):
+        self.c.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+
+    # -- topics --
+    def test_topics_list_public(self):
+        r = self.c.get("/api/topics/")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        items = data["results"] if isinstance(data, dict) else data
+        self.assertGreaterEqual(len(items), 1)
+        first = items[0]
+        self.assertEqual(first["title"], "First topic")
+        self.assertEqual(first["author"], "socialuser")
+        self.assertIn("comment_count", first)
+        self.assertIn("likes", first)
+
+    def test_create_topic_requires_auth(self):
+        r = self.c.post("/api/topics/", {"title": "Anon", "body": "x"}, format="json")
+        self.assertEqual(r.status_code, 401)  # NotAuthenticated
+
+    def test_create_topic_sets_author(self):
+        self._auth()
+        r = self.c.post(
+            "/api/topics/",
+            {"title": "My topic", "body": "Details", "category": "news"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()["author"], "socialuser")
+        self.assertEqual(r.json()["category"], "news")
+        self.assertEqual(DiscussionTopic.objects.count(), 2)
+
+    # -- comments --
+    def test_comments_list_filtered_by_target(self):
+        Comment.objects.create(
+            content_type=self.news_ct, object_id=self.news.id,
+            author=self.user, body="Nice article",
+        )
+        r = self.c.get(f"/api/comments/?content_type=news&object_id={self.news.id}")
+        self.assertEqual(r.status_code, 200)
+        items = r.json()["results"]  # paginated
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["body"], "Nice article")
+        self.assertEqual(items[0]["author"], "socialuser")
+        self.assertEqual(items[0]["content_type"], "news")
+
+    def test_comment_requires_auth(self):
+        r = self.c.post(
+            "/api/comments/",
+            {"content_type": "news", "object_id": self.news.id, "body": "hi"},
+            format="json",
+        )
+        # Unauthenticated + global TokenAuthentication -> 401 NotAuthenticated
+        self.assertEqual(r.status_code, 401)
+
+    def test_comment_on_missing_item_400(self):
+        self._auth()
+        r = self.c.post(
+            "/api/comments/",
+            {"content_type": "news", "object_id": 999999, "body": "hi"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_create_comment_and_reply(self):
+        self._auth()
+        r1 = self.c.post(
+            "/api/comments/",
+            {"content_type": "news", "object_id": self.news.id, "body": "First!"},
+            format="json",
+        )
+        self.assertEqual(r1.status_code, 201)
+        cid = r1.json()["id"]
+        r2 = self.c.post(
+            "/api/comments/",
+            {"content_type": "news", "object_id": self.news.id,
+             "body": "Reply", "parent": cid},
+            format="json",
+        )
+        self.assertEqual(r2.status_code, 201)
+        self.assertEqual(r2.json()["parent"], cid)
+        r3 = self.c.get(f"/api/comments/?content_type=news&object_id={self.news.id}")
+        self.assertEqual(len(r3.json()["results"]), 2)
+
+    def test_delete_own_comment_only(self):
+        self._auth()
+        r = self.c.post(
+            "/api/comments/",
+            {"content_type": "news", "object_id": self.news.id, "body": "Mine"},
+            format="json",
+        )
+        cid = r.json()["id"]
+        other = User.objects.create_user("otheruser", password="CorrectHorse1!")
+        t2 = Token.objects.create(user=other)
+        self.c.credentials(HTTP_AUTHORIZATION=f"Token {t2.key}")
+        self.assertEqual(self.c.delete(f"/api/comments/{cid}/").status_code, 403)
+        self.c.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        self.assertEqual(self.c.delete(f"/api/comments/{cid}/").status_code, 204)
+        self.assertEqual(Comment.objects.count(), 0)
+
+    # -- reactions --
+    def test_reaction_toggle_like(self):
+        self._auth()
+        r = self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "news", "object_id": self.news.id, "value": "like"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["likes"], 1)
+        self.assertEqual(r.json()["my_value"], "like")
+        # same value again → removed
+        r2 = self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "news", "object_id": self.news.id, "value": "like"},
+            format="json",
+        )
+        self.assertEqual(r2.json()["likes"], 0)
+        self.assertIsNone(r2.json()["my_value"])
+        # switch to dislike
+        r3 = self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "news", "object_id": self.news.id, "value": "dislike"},
+            format="json",
+        )
+        self.assertEqual(r3.json()["dislikes"], 1)
+        self.assertEqual(r3.json()["my_value"], "dislike")
+
+    def test_reaction_requires_auth(self):
+        r = self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "news", "object_id": self.news.id, "value": "like"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 401)
+
+    def test_reaction_summary_public(self):
+        self._auth()
+        self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "event", "object_id": self.event.id, "value": "like"},
+            format="json",
+        )
+        self.c.credentials()  # anonymous
+        r = self.c.get(
+            f"/api/reactions/summary/?content_type=event&object_id={self.event.id}"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["likes"], 1)
+        self.assertIsNone(r.json()["my_value"])
+
+    def test_reaction_bulk(self):
+        self._auth()
+        self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "news", "object_id": self.news.id, "value": "like"},
+            format="json",
+        )
+        r = self.c.get(
+            f"/api/reactions/bulk/?targets=news:{self.news.id},"
+            f"event:{self.event.id},bogus:1"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()[f"news:{self.news.id}"]["likes"], 1)
+        self.assertNotIn("bogus:1", r.json())
+
+    def test_reactions_unique_per_user(self):
+        self._auth()
+        self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "news", "object_id": self.news.id, "value": "like"},
+            format="json",
+        )
+        self.c.post(
+            "/api/reactions/toggle/",
+            {"content_type": "news", "object_id": self.news.id, "value": "dislike"},
+            format="json",
+        )
+        self.assertEqual(
+            Reaction.objects.filter(content_type=self.news_ct, object_id=self.news.id).count(),
+            1,
+        )

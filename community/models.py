@@ -1,3 +1,6 @@
+from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
@@ -235,6 +238,95 @@ class FeaturedPlacement(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+# ── Social: discussions, comments, reactions ─────────────────────────
+
+class DiscussionTopic(models.Model):
+    """User-created discussion thread in the Conversations section."""
+
+    CATEGORY_CHOICES = [
+        ("general", "General"),
+        ("news", "News"),
+        ("events", "Events"),
+        ("business", "Business"),
+        ("help", "Help & Questions"),
+    ]
+
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="topics"
+    )
+    category = models.CharField(
+        max_length=50, choices=CATEGORY_CHOICES, default="general"
+    )
+    is_pinned = models.BooleanField(default=False, help_text="Staff: pin to the top")
+    is_closed = models.BooleanField(
+        default=False, help_text="Staff: lock the thread (no new comments)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["-is_pinned", "-created_at"]
+
+
+class Comment(models.Model):
+    """A comment on any content (news, event, business, school, topic)."""
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments"
+    )
+    body = models.TextField(max_length=2000)
+    parent = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
+    )
+    is_hidden = models.BooleanField(default=False, help_text="Staff: hide abusive content")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.author}: {self.body[:50]}"
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [models.Index(fields=["content_type", "object_id"])]
+
+
+class Reaction(models.Model):
+    """Like/dislike on any content. One per user per item (toggle)."""
+
+    LIKE = "like"
+    DISLIKE = "dislike"
+    VALUE_CHOICES = [(LIKE, "Like"), (DISLIKE, "Dislike")]
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reactions"
+    )
+    value = models.CharField(max_length=10, choices=VALUE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} {self.value} {self.content_object}"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content_type", "object_id", "user"],
+                name="unique_reaction_per_user_per_item",
+            )
+        ]
 
 
 class Deal(models.Model):

@@ -4,12 +4,15 @@ from django.utils.html import format_html
 from .models import (
     Alert,
     Business,
+    Comment,
     CommunityTip,
     CouncilAgenda,
     Deal,
+    DiscussionTopic,
     Event,
     FeaturedPlacement,
     NewsItem,
+    Reaction,
     School,
     WeatherInfo,
 )
@@ -139,3 +142,33 @@ class DealAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     list_editable = ("is_active",)
     raw_id_fields = ("business",)
+
+
+@admin.register(DiscussionTopic)
+class DiscussionTopicAdmin(admin.ModelAdmin):
+    list_display = ("title", "author", "category", "is_pinned", "is_closed", "created_at")
+    list_filter = ("category", "is_pinned", "is_closed", "created_at")
+    search_fields = ("title", "body", "author__username")
+    list_editable = ("is_pinned", "is_closed")
+    raw_id_fields = ("author",)
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ("author", "content_type", "object_id", "body_short", "is_hidden", "created_at")
+    list_filter = ("is_hidden", "content_type", "created_at")
+    search_fields = ("body", "author__username")
+    list_editable = ("is_hidden",)
+    raw_id_fields = ("author", "parent")
+
+    @admin.display(description="Comment")
+    def body_short(self, obj):
+        return obj.body[:60] + ("…" if len(obj.body) > 60 else "")
+
+
+@admin.register(Reaction)
+class ReactionAdmin(admin.ModelAdmin):
+    list_display = ("user", "value", "content_type", "object_id", "created_at")
+    list_filter = ("value", "content_type")
+    search_fields = ("user__username",)
+    raw_id_fields = ("user",)

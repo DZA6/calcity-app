@@ -67,7 +67,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: NewsCard(item: n, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => DetailScreen(
-                      title: n.title, itemType: 'news', content: n.content,
+                      title: n.title, itemType: 'news', content: n.content, itemId: n.id,
                       metadata: {
                         if (n.imageUrl != null) 'image_url': n.imageUrl!,
                         if (n.videoUrl != null) 'video_url': n.videoUrl!,

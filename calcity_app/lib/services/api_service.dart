@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/content.dart';
+import '../models/social.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -20,6 +21,209 @@ class ApiService {
       : 'http://10.0.2.2:8000';
 
   final Duration _timeout = const Duration(seconds: 15);
+
+  /// Auth token for social endpoints — synced by AuthProvider on login/logout.
+  String? authToken;
+
+  Map<String, String> _headers({bool auth = false}) => {
+        'Content-Type': 'application/json',
+        if (auth && authToken != null) 'Authorization': 'Token $authToken',
+      };
+
+  // ── Social: comments ──────────────────────────────────────────────
+
+  Future<List<CommentItem>> fetchComments(String contentType, int objectId) async {
+    try {
+      final resp = await http
+          .get(Uri.parse(
+              '$baseUrl/api/comments/?content_type=$contentType&object_id=$objectId'))
+          .timeout(_timeout);
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+        final List<dynamic> items =
+            data is Map<String, dynamic> ? data['results'] as List<dynamic> : data;
+        return items
+            .map((e) => CommentItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // offline — empty list
+    }
+    return [];
+  }
+
+  Future<CommentItem?> postComment({
+    required String contentType,
+    required int objectId,
+    required String body,
+    int? parentId,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'content_type': contentType,
+        'object_id': objectId,
+        'body': body,
+        if (parentId != null) 'parent': parentId,
+      };
+      final resp = await http
+          .post(Uri.parse('$baseUrl/api/comments/'),
+              headers: _headers(auth: true), body: json.encode(payload))
+          .timeout(_timeout);
+      if (resp.statusCode == 201) {
+        return CommentItem.fromJson(json.decode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
+  Future<bool> deleteComment(int id) async {
+    try {
+      final resp = await http
+          .delete(Uri.parse('$baseUrl/api/comments/$id/'),
+              headers: _headers(auth: true))
+          .timeout(_timeout);
+      return resp.statusCode == 204;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ── Social: reactions ─────────────────────────────────────────────
+
+  /// Toggle a like/dislike; returns the fresh summary, or null on failure.
+  Future<ReactionSummary?> toggleReaction({
+    required String contentType,
+    required int objectId,
+    required String value, // 'like' | 'dislike'
+  }) async {
+    try {
+      final resp = await http
+          .post(Uri.parse('$baseUrl/api/reactions/toggle/'),
+              headers: _headers(auth: true),
+              body: json.encode({
+                'content_type': contentType,
+                'object_id': objectId,
+                'value': value,
+              }))
+          .timeout(_timeout);
+      if (resp.statusCode == 200) {
+        return ReactionSummary.fromJson(
+            json.decode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
+  Future<ReactionSummary?> fetchReactionSummary(
+      String contentType, int objectId) async {
+    try {
+      final resp = await http
+          .get(Uri.parse(
+              '$baseUrl/api/reactions/summary/?content_type=$contentType&object_id=$objectId'))
+          .timeout(_timeout);
+      if (resp.statusCode == 200) {
+        return ReactionSummary.fromJson(
+            json.decode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
+  /// Batch summaries for a list screen: targets = {'news': [1,2,3], ...}.
+  Future<Map<String, ReactionSummary>> fetchReactionBulk(
+      Map<String, List<int>> targets) async {
+    final result = <String, ReactionSummary>{};
+    final parts = <String>[];
+    targets.forEach((key, ids) {
+      for (final id in ids) {
+        parts.add('$key:$id');
+      }
+    });
+    if (parts.isEmpty) return result;
+    try {
+      final resp = await http
+          .get(Uri.parse('$baseUrl/api/reactions/bulk/?targets=${parts.join(',')}'))
+          .timeout(_timeout);
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body) as Map<String, dynamic>;
+        data.forEach((key, value) {
+          result[key] =
+              ReactionSummary.fromJson(value as Map<String, dynamic>);
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+    return result;
+  }
+
+  // ── Social: discussion topics ─────────────────────────────────────
+
+  Future<List<DiscussionTopicItem>> fetchTopics({String? category}) async {
+    try {
+      final url = category != null && category.isNotEmpty
+          ? '$baseUrl/api/topics/?category=$category'
+          : '$baseUrl/api/topics/';
+      final resp = await http.get(Uri.parse(url)).timeout(_timeout);
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+        final List<dynamic> items =
+            data is Map<String, dynamic> ? data['results'] as List<dynamic> : data;
+        return items
+            .map((e) => DiscussionTopicItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // ignore
+    }
+    return [];
+  }
+
+  Future<DiscussionTopicItem?> fetchTopic(int id) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$baseUrl/api/topics/$id/'))
+          .timeout(_timeout);
+      if (resp.statusCode == 200) {
+        return DiscussionTopicItem.fromJson(
+            json.decode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
+  Future<DiscussionTopicItem?> createTopic({
+    required String title,
+    required String body,
+    String category = 'general',
+  }) async {
+    try {
+      final resp = await http
+          .post(Uri.parse('$baseUrl/api/topics/'),
+              headers: _headers(auth: true),
+              body: json.encode({
+                'title': title,
+                'body': body,
+                'category': category,
+              }))
+          .timeout(_timeout);
+      if (resp.statusCode == 201) {
+        return DiscussionTopicItem.fromJson(
+            json.decode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
 
   Future<List<NewsItem>> fetchNews() async {
     try {

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:calcity_app/models/content.dart';
+import 'package:calcity_app/models/social.dart';
 import 'package:calcity_app/main.dart';
 
 void main() {
@@ -112,5 +113,103 @@ void main() {
     await tester.pumpWidget(const CalCityApp());
     await tester.pump();
     expect(find.byType(CalCityApp), findsOneWidget);
+  });
+
+  group('ReactionSummary', () {
+    test('fromJson parses counts and my_value', () {
+      final s = ReactionSummary.fromJson(
+          {'likes': 3, 'dislikes': 1, 'my_value': 'like'});
+      expect(s.likes, 3);
+      expect(s.dislikes, 1);
+      expect(s.myValue, 'like');
+      expect(s.total, 4);
+    });
+
+    test('fromJson defaults when keys absent', () {
+      final s = ReactionSummary.fromJson({});
+      expect(s.likes, 0);
+      expect(s.dislikes, 0);
+      expect(s.myValue, null);
+    });
+  });
+
+  group('CommentItem', () {
+    test('fromJson parses full payload incl. parent', () {
+      final c = CommentItem.fromJson({
+        'id': 7,
+        'content_type': 'news',
+        'object_id': 42,
+        'author': 'calcitizen',
+        'author_id': 5,
+        'body': 'Great article!',
+        'parent': 3,
+        'created_at': '2026-08-08T12:00:00Z',
+      });
+      expect(c.id, 7);
+      expect(c.contentType, 'news');
+      expect(c.objectId, 42);
+      expect(c.author, 'calcitizen');
+      expect(c.parentId, 3);
+      expect(c.createdAt.year, 2026);
+    });
+
+    test('fromJson handles top-level comment (parent null)', () {
+      final c = CommentItem.fromJson({
+        'id': 1,
+        'content_type': 'event',
+        'object_id': 9,
+        'author': 'x',
+        'author_id': 1,
+        'body': 'hi',
+      });
+      expect(c.parentId, null);
+    });
+  });
+
+  group('DiscussionTopicItem', () {
+    test('fromJson parses topic fields', () {
+      final t = DiscussionTopicItem.fromJson({
+        'id': 1,
+        'title': 'Best taco spot?',
+        'body': 'Looking for recommendations',
+        'author': 'foodie',
+        'author_id': 2,
+        'category': 'general',
+        'is_pinned': true,
+        'is_closed': false,
+        'created_at': '2026-08-08T12:00:00Z',
+        'updated_at': '2026-08-08T13:00:00Z',
+        'comment_count': 5,
+        'likes': 12,
+        'dislikes': 1,
+        'my_value': 'like',
+      });
+      expect(t.title, 'Best taco spot?');
+      expect(t.isPinned, true);
+      expect(t.commentCount, 5);
+      expect(t.likes, 12);
+      expect(t.myValue, 'like');
+    });
+
+    test('fromJson defaults booleans/counts', () {
+      final t = DiscussionTopicItem.fromJson(
+          {'id': 2, 'title': 'T', 'body': 'B', 'author': 'a'});
+      expect(t.isPinned, false);
+      expect(t.commentCount, 0);
+      expect(t.likes, 0);
+      expect(t.myValue, null);
+      expect(t.category, 'general');
+    });
+  });
+
+  group('timeAgo', () {
+    test('formats relative times', () {
+      final now = DateTime(2026, 8, 8, 12, 0, 0);
+      expect(timeAgo(now.subtract(const Duration(seconds: 30)), now: now),
+          'just now');
+      expect(timeAgo(now.subtract(const Duration(minutes: 5)), now: now), '5m');
+      expect(timeAgo(now.subtract(const Duration(hours: 3)), now: now), '3h');
+      expect(timeAgo(now.subtract(const Duration(days: 2)), now: now), '2d');
+    });
   });
 }

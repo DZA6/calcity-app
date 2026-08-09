@@ -1,10 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
+
+  static const _keyToken = 'auth_token';
+  static const _keyUsername = 'auth_username';
+  static const _keyEmail = 'auth_email';
 
   String? _token;
   String? _username;
@@ -18,6 +23,29 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _token != null;
   String? get error => _error;
+
+  /// Restore a persisted session (called once at startup).
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString(_keyToken);
+    _username = prefs.getString(_keyUsername);
+    _email = prefs.getString(_keyEmail);
+    _api.authToken = _token; // sync social endpoints
+    notifyListeners();
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_token != null) {
+      await prefs.setString(_keyToken, _token!);
+      await prefs.setString(_keyUsername, _username ?? '');
+      await prefs.setString(_keyEmail, _email ?? '');
+    } else {
+      await prefs.remove(_keyToken);
+      await prefs.remove(_keyUsername);
+      await prefs.remove(_keyEmail);
+    }
+  }
 
   Future<bool> login(String username, String password) async {
     _isLoading = true;
@@ -38,8 +66,10 @@ class AuthProvider extends ChangeNotifier {
         _token = data['token'];
         _username = data['username'] ?? username;
         _email = data['email'] ?? '';
+        _api.authToken = _token; // sync social endpoints
         _isLoading = false;
         _error = null;
+        await _persist();
         notifyListeners();
         return true;
       }
@@ -94,6 +124,8 @@ class AuthProvider extends ChangeNotifier {
     _username = null;
     _email = null;
     _error = null;
+    _api.authToken = null;
+    _persist(); // fire-and-forget; clears stored credentials
     notifyListeners();
   }
 

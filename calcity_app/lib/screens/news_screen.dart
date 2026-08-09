@@ -71,6 +71,7 @@ class NewsScreen extends StatelessWidget {
                             title: item.title,
                             itemType: 'news',
                             content: item.content,
+                            itemId: item.id,
                             metadata: {
                               'date': item.createdAt.toIso8601String(),
                               if (item.sourceUrl != null)

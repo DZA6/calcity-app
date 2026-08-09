@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../widgets/comments_section.dart';
+import '../widgets/reaction_bar.dart';
+
 class DetailScreen extends StatelessWidget {
   final String title;
   final String itemType;
   final String content;
   final Map<String, String> metadata;
+
+  /// Backend ID of the item — enables comments/reactions on this screen.
+  final int? itemId;
 
   const DetailScreen({
     super.key,
@@ -13,6 +19,7 @@ class DetailScreen extends StatelessWidget {
     required this.itemType,
     required this.content,
     this.metadata = const {},
+    this.itemId,
   });
 
   @override
@@ -66,6 +73,28 @@ class DetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Social: reactions + comments (needs a backend item id)
+            if (itemId != null) ...[
+              Divider(color: theme.colorScheme.outlineVariant),
+              Row(
+                children: [
+                  ReactionBar(contentType: itemType, objectId: itemId!),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () => showCommentsSheet(
+                      context,
+                      contentType: itemType,
+                      objectId: itemId!,
+                      title: title,
+                    ),
+                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                    label: const Text('Comments'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
 
             // Action buttons
             _buildActionButtons(theme, context),

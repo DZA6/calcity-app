@@ -861,7 +861,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
   // ---- Nav helpers ----
   void _openNews(BuildContext ctx, NewsItem item) {
-    _push(DetailScreen(title: item.title, itemType: 'news', content: item.content, metadata: {
+    _push(DetailScreen(title: item.title, itemType: 'news', content: item.content, itemId: item.id, metadata: {
       if (item.imageUrl != null) 'image_url': item.imageUrl!,
       if (item.videoUrl != null) 'video_url': item.videoUrl!,
       if (item.sourceUrl != null) 'source_url': item.sourceUrl!,
@@ -869,7 +869,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   void _openEvent(BuildContext ctx, EventItem e) =>
-      _push(DetailScreen(title: e.title, itemType: 'event', content: e.description ?? '', metadata: {
+      _push(DetailScreen(title: e.title, itemType: 'event', content: e.description ?? '', itemId: e.id, metadata: {
         if (e.startDate != null) 'start_date': e.startDate!.toIso8601String(),
         if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
         if (e.location != null) 'location': e.location!,
@@ -877,7 +877,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       }));
 
   void _openBusiness(BuildContext ctx, BusinessItem b) =>
-      _push(DetailScreen(title: b.name, itemType: 'business', content: b.description ?? '', metadata: {
+      _push(DetailScreen(title: b.name, itemType: 'business', content: b.description ?? '', itemId: b.id, metadata: {
         if (b.category != null) 'category': b.category!,
         if (b.contactPhone != null) 'phone': b.contactPhone!,
         if (b.contactEmail != null) 'email': b.contactEmail!,

@@ -141,6 +141,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                                   title: b.name,
                                   itemType: 'business',
                                   content: b.description ?? 'No description available.',
+                                  itemId: b.id,
                                   metadata: {
                                     if (b.category != null) 'category': b.category!,
                                     if (b.contactPhone != null) 'phone': b.contactPhone!,
@@ -310,6 +311,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                                 itemType: 'business',
                                 content: item.description ??
                                     'No description available.',
+                                itemId: item.id,
                                 metadata: {
                                   if (item.category != null)
                                     'category': item.category!,
