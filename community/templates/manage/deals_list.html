@@ -1,0 +1,63 @@
+{% extends "manage/base.html" %}
+{% block title %}Deals — CalCity Manage{% endblock %}
+{% block content %}
+<div class="anim-in">
+<h1 class="page-title">Deals &amp; Promotions</h1>
+<p class="page-subtitle">{{ total }} deals total — shown in the app's Deals tab</p>
+
+<div style="display:flex; gap:10px; margin-bottom:20px; align-items:center;">
+  <form method="get" style="flex:1; display:flex; gap:8px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search deals...">
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
+  <a href="{% url 'manage:deal_edit' %}" class="btn btn-success">+ New Deal</a>
+</div>
+
+<div class="card anim-slide">
+{% if deals %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Deal</th><th>Business</th><th>Discount</th><th>Active</th><th style="width:120px;">Actions</th></tr></thead>
+  <tbody>
+  {% for d in deals %}
+  <tr>
+    <td><a href="{% url 'manage:deal_edit' d.pk %}" style="color:var(--text);text-decoration:none;font-weight:600;">{{ d.title|truncatechars:40 }}</a></td>
+    <td style="font-size:0.85rem;">{{ d.business.name }}</td>
+    <td>{% if d.discount %}<span class="badge badge-warning">{{ d.discount }}</span>{% else %}—{% endif %}</td>
+    <td>
+      <label class="toggle">
+        <input type="checkbox" {% if d.is_active %}checked{% endif %} data-url="{% url 'manage:deal_toggle' d.pk %}">
+        <span class="slider"></span>
+      </label>
+    </td>
+    <td>
+      <div class="btn-group">
+        <a href="{% url 'manage:deal_edit' d.pk %}" class="btn btn-sm btn-outline">Edit</a>
+        <a href="{% url 'manage:deal_delete' d.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if deals.has_other_pages %}
+<div class="pagination">
+  {% if deals.has_previous %}<a href="?page={{ deals.previous_page_number }}&q={{ q }}">&laquo;</a>{% endif %}
+  <span class="current">Page {{ deals.number }} of {{ deals.paginator.num_pages }}</span>
+  {% if deals.has_next %}<a href="?page={{ deals.next_page_number }}&q={{ q }}">&raquo;</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state"><div class="empty-icon">&#127973;</div>No deals yet. <a href="{% url 'manage:deal_edit' %}">Post one.</a></div>
+{% endif %}
+</div>
+</div>
+<script>
+document.querySelectorAll('.toggle input').forEach(function(t) {
+  t.addEventListener('change', function() {
+    fetch(this.dataset.url, {method:'GET'});
+  });
+});
+</script>
+{% endblock %}

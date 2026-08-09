@@ -1,0 +1,51 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if placement %}Edit{% else %}New{% endif %} Featured — CalCity Manage{% endblock %}
+{% block content %}
+<div class="anim-in">
+<h1 class="page-title">{% if placement %}Edit Featured Slot{% else %}New Featured Slot{% endif %}</h1>
+<p class="page-subtitle">Only PAID + ACTIVE placements show in the app's SPONSORED card</p>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card anim-slide" style="max-width:640px;">
+<form method="post">
+  {% csrf_token %}
+  <div class="form-group">
+    <label>Business *</label>
+    <select name="business" required>
+      <option value="">— Select business —</option>
+      {% for b in businesses %}
+      <option value="{{ b.pk }}" {% if placement.business_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Promo Headline *</label>
+    <input type="text" name="headline" value="{{ placement.headline|default:'' }}" required placeholder="e.g. 20% off this week">
+  </div>
+  <div style="display:flex; gap:14px;">
+    <div class="form-group" style="flex:1;">
+      <label>Start Date</label>
+      <input type="date" name="start_date" value="{{ placement.start_date|date:'Y-m-d'|default:'' }}">
+    </div>
+    <div class="form-group" style="flex:1;">
+      <label>End Date</label>
+      <input type="date" name="end_date" value="{{ placement.end_date|date:'Y-m-d'|default:'' }}">
+    </div>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" name="is_paid" id="paid" {% if placement.is_paid %}checked{% endif %}>
+    <label for="paid"><strong>Paid</strong> — confirmed payment received</label>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" name="is_active" id="active" {% if placement.is_active or not placement %}checked{% endif %}>
+    <label for="active">Active (shown in app)</label>
+  </div>
+  <div class="btn-group" style="margin-top:18px;">
+    <button class="btn btn-primary" type="submit">Save Placement</button>
+    <a href="{% url 'manage:featured_list' %}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+</div>
+</div>
+{% endblock %}

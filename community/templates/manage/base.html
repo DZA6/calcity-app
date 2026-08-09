@@ -386,6 +386,72 @@ select { cursor: pointer; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .quick-actions { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── Animations ───────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.92); }
+  70% { transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-in { animation: fadeInUp 0.4s ease-out both; }
+.anim-pop { animation: popIn 0.35s ease-out both; }
+.anim-pulse { animation: pulse 2s ease-in-out infinite; }
+.anim-slide { animation: slideDown 0.3s ease-out both; }
+.stats .stat-card, .quick-actions .qa-card, .card { animation: fadeInUp 0.4s ease-out both; }
+.stats .stat-card:nth-child(2) { animation-delay: 0.06s; }
+.stats .stat-card:nth-child(3) { animation-delay: 0.12s; }
+.stats .stat-card:nth-child(4) { animation-delay: 0.18s; }
+.stats .stat-card:nth-child(5) { animation-delay: 0.24s; }
+.stats .stat-card:nth-child(6) { animation-delay: 0.3s; }
+.quick-actions .qa-card:nth-child(2) { animation-delay: 0.06s; }
+.quick-actions .qa-card:nth-child(3) { animation-delay: 0.12s; }
+.quick-actions .qa-card:nth-child(4) { animation-delay: 0.18s; }
+.quick-actions .qa-card:nth-child(5) { animation-delay: 0.24s; }
+.quick-actions .qa-card:nth-child(6) { animation-delay: 0.3s; }
+tr { animation: fadeIn 0.25s ease-out both; }
+
+/* Moderation-specific */
+.thread-card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+.thread-card:hover { border-color: var(--terra); box-shadow: var(--card-shadow); }
+.thread-card .thread-title { font-weight: 600; font-size: 0.95rem; color: var(--text); }
+.thread-card .thread-meta { font-size: 0.78rem; color: var(--text-light); margin-top: 3px; }
+.comment-row {
+  padding: 10px 14px;
+  border-left: 3px solid var(--border);
+  margin-bottom: 8px;
+  background: #FFFDFB;
+  border-radius: 0 8px 8px 0;
+}
+.comment-row:hover { border-left-color: var(--terra); }
+.mod-queue-empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--success);
+  font-weight: 500;
+}
 </style>
 </head>
 <body>
@@ -395,10 +461,15 @@ select { cursor: pointer; }
   <nav>
     <a href="{% url 'manage:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
     <a href="{% url 'manage:news_list' %}" class="{% if 'news' in request.resolver_match.url_name %}active{% endif %}">Articles</a>
+    <a href="{% url 'manage:moderation' %}" class="{% if 'moderation' in request.resolver_match.url_name or 'topic' in request.resolver_match.url_name or 'comment' in request.resolver_match.url_name %}active{% endif %}">Community</a>
     <a href="{% url 'manage:weather' %}" class="{% if request.resolver_match.url_name == 'weather' %}active{% endif %}">Weather</a>
     <a href="{% url 'manage:alerts' %}" class="{% if 'alert' in request.resolver_match.url_name %}active{% endif %}">Alerts</a>
     <a href="{% url 'manage:events_list' %}" class="{% if 'events' in request.resolver_match.url_name %}active{% endif %}">Events</a>
     <a href="{% url 'manage:businesses_list' %}" class="{% if 'business' in request.resolver_match.url_name %}active{% endif %}">Businesses</a>
+    <a href="{% url 'manage:schools_list' %}" class="{% if 'school' in request.resolver_match.url_name %}active{% endif %}">Schools</a>
+    <a href="{% url 'manage:council_list' %}" class="{% if 'council' in request.resolver_match.url_name %}active{% endif %}">Council</a>
+    <a href="{% url 'manage:deals_list' %}" class="{% if 'deal' in request.resolver_match.url_name %}active{% endif %}">Deals</a>
+    <a href="{% url 'manage:featured_list' %}" class="{% if 'featured' in request.resolver_match.url_name %}active{% endif %}">Featured</a>
   </nav>
   <span class="user-info">{{ user.username }}</span>
 </header>

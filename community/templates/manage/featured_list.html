@@ -1,0 +1,41 @@
+{% extends "manage/base.html" %}
+{% block title %}Featured — CalCity Manage{% endblock %}
+{% block content %}
+<div class="anim-in">
+<h1 class="page-title">Featured Placements</h1>
+<p class="page-subtitle">Paid promotion slots — shown as the SPONSORED card in the app</p>
+
+<div style="display:flex; gap:10px; margin-bottom:20px;">
+  <a href="{% url 'manage:featured_edit' %}" class="btn btn-success">+ New Featured Slot</a>
+</div>
+
+<div class="card anim-slide">
+{% if featured %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Business</th><th>Headline</th><th>Dates</th><th>Paid</th><th>Active</th><th style="width:90px;">Actions</th></tr></thead>
+  <tbody>
+  {% for f in featured %}
+  <tr>
+    <td style="font-weight:600;">{{ f.business.name }}</td>
+    <td>{{ f.headline|truncatechars:35 }}</td>
+    <td style="font-size:0.8rem;">{{ f.start_date|date:"M j" }} → {{ f.end_date|date:"M j" }}</td>
+    <td>{% if f.is_paid %}<span class="badge badge-success">Paid</span>{% else %}<span class="badge badge-warning">Unpaid</span>{% endif %}</td>
+    <td>{% if f.is_active %}<span class="badge badge-success">Live</span>{% else %}<span class="badge badge-neutral">Off</span>{% endif %}</td>
+    <td>
+      <div class="btn-group">
+        <a href="{% url 'manage:featured_edit' f.pk %}" class="btn btn-sm btn-outline">Edit</a>
+        <a href="{% url 'manage:featured_delete' f.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-state"><div class="empty-icon">&#11088;</div>No featured placements yet. <a href="{% url 'manage:featured_edit' %}">Sell a slot.</a></div>
+{% endif %}
+</div>
+</div>
+{% endblock %}

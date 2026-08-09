@@ -1,0 +1,51 @@
+{% extends "manage/base.html" %}
+{% block title %}Schools — CalCity Manage{% endblock %}
+{% block content %}
+<div class="anim-in">
+<h1 class="page-title">Schools</h1>
+<p class="page-subtitle">{{ total }} schools in the directory</p>
+
+<div style="display:flex; gap:10px; margin-bottom:20px; align-items:center;">
+  <form method="get" style="flex:1; display:flex; gap:8px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search schools...">
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
+  <a href="{% url 'manage:school_edit' %}" class="btn btn-success">+ Add School</a>
+</div>
+
+<div class="card anim-slide">
+{% if schools %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Name</th><th>Type</th><th>Phone</th><th>Status</th><th style="width:120px;">Actions</th></tr></thead>
+  <tbody>
+  {% for s in schools %}
+  <tr>
+    <td><a href="{% url 'manage:school_edit' s.pk %}" style="color:var(--text);text-decoration:none;font-weight:600;">{{ s.name }}</a></td>
+    <td><span class="badge badge-neutral">{{ s.get_type_display }}</span></td>
+    <td style="font-size:0.85rem;">{{ s.phone|default:"—" }}</td>
+    <td>{% if s.is_approved %}<span class="badge badge-success">Approved</span>{% else %}<span class="badge badge-warning">Hidden</span>{% endif %}</td>
+    <td>
+      <div class="btn-group">
+        <a href="{% url 'manage:school_edit' s.pk %}" class="btn btn-sm btn-outline">Edit</a>
+        <a href="{% url 'manage:school_delete' s.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if schools.has_other_pages %}
+<div class="pagination">
+  {% if schools.has_previous %}<a href="?page={{ schools.previous_page_number }}&q={{ q }}">&laquo;</a>{% endif %}
+  <span class="current">Page {{ schools.number }} of {{ schools.paginator.num_pages }}</span>
+  {% if schools.has_next %}<a href="?page={{ schools.next_page_number }}&q={{ q }}">&raquo;</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state"><div class="empty-icon">&#127979;</div>No schools yet. <a href="{% url 'manage:school_edit' %}">Add one.</a></div>
+{% endif %}
+</div>
+</div>
+{% endblock %}

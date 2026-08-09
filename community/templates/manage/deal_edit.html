@@ -1,0 +1,45 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if deal %}Edit{% else %}New{% endif %} Deal — CalCity Manage{% endblock %}
+{% block content %}
+<div class="anim-in">
+<h1 class="page-title">{% if deal %}Edit Deal{% else %}New Deal{% endif %}</h1>
+<p class="page-subtitle">Deals appear in the app's Deals tab with a discount badge</p>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card anim-slide" style="max-width:640px;">
+<form method="post">
+  {% csrf_token %}
+  <div class="form-group">
+    <label>Business *</label>
+    <select name="business" required>
+      <option value="">— Select business —</option>
+      {% for b in businesses %}
+      <option value="{{ b.pk }}" {% if deal.business_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Deal Title *</label>
+    <input type="text" name="title" value="{{ deal.title|default:'' }}" required placeholder="e.g. Summer Menu Special">
+  </div>
+  <div class="form-group">
+    <label>Discount</label>
+    <input type="text" name="discount" value="{{ deal.discount|default:'' }}" placeholder="e.g. 20% off, BOGO free">
+  </div>
+  <div class="form-group">
+    <label>Description</label>
+    <textarea name="description">{{ deal.description|default:'' }}</textarea>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" name="is_active" id="active" {% if deal.is_active or not deal %}checked{% endif %}>
+    <label for="active">Active (shown in app)</label>
+  </div>
+  <div class="btn-group" style="margin-top:18px;">
+    <button class="btn btn-primary" type="submit">Save Deal</button>
+    <a href="{% url 'manage:deals_list' %}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+</div>
+</div>
+{% endblock %}

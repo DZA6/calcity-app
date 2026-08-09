@@ -25,6 +25,30 @@
     <div class="stat-num">{{ pending_tips }}</div>
     <div class="stat-label">Pending Tips</div>
   </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ school_count }}</div>
+    <div class="stat-label">Schools</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ business_count }}</div>
+    <div class="stat-label">Businesses</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ deal_count }}</div>
+    <div class="stat-label">Active Deals</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ featured_count }}</div>
+    <div class="stat-label">Featured</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ topic_count }}</div>
+    <div class="stat-label">Discussions</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ comment_count }}</div>
+    <div class="stat-label">Comments</div>
+  </div>
 </div>
 
 <!-- Quick Actions -->
@@ -48,6 +72,18 @@
   <a href="{% url 'manage:business_edit' %}" class="qa-card">
     <div class="qa-icon">&#127970;</div>
     <div><div class="qa-text">Add Business</div><div class="qa-desc">Shop, service, freelancer</div></div>
+  </a>
+  <a href="{% url 'manage:moderation' %}" class="qa-card">
+    <div class="qa-icon">&#128172;</div>
+    <div><div class="qa-text">Moderate Community</div><div class="qa-desc">Tips, topics, comments</div></div>
+  </a>
+  <a href="{% url 'manage:deal_edit' %}" class="qa-card">
+    <div class="qa-icon">&#127973;</div>
+    <div><div class="qa-text">New Deal</div><div class="qa-desc">Post a business promotion</div></div>
+  </a>
+  <a href="{% url 'manage:featured_edit' %}" class="qa-card">
+    <div class="qa-icon">&#11088;</div>
+    <div><div class="qa-text">Featured Slot</div><div class="qa-desc">Paid business promotion</div></div>
   </a>
 </div>
 

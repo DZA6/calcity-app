@@ -1,0 +1,52 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if school %}Edit{% else %}New{% endif %} School — CalCity Manage{% endblock %}
+{% block content %}
+<div class="anim-in">
+<h1 class="page-title">{% if school %}Edit School{% else %}Add School{% endif %}</h1>
+<p class="page-subtitle">Schools appear in the app's Education section</p>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card anim-slide" style="max-width:640px;">
+<form method="post">
+  {% csrf_token %}
+  <div class="form-group">
+    <label>School Name *</label>
+    <input type="text" name="name" value="{{ school.name|default:'' }}" required>
+  </div>
+  <div class="form-group">
+    <label>Type</label>
+    <select name="type">
+      <option value="elementary" {% if school.type == 'elementary' %}selected{% endif %}>Elementary</option>
+      <option value="middle" {% if school.type == 'middle' %}selected{% endif %}>Middle School</option>
+      <option value="high" {% if school.type == 'high' %}selected{% endif %}>High School</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Address</label>
+    <input type="text" name="address" value="{{ school.address|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>Phone</label>
+    <input type="text" name="phone" value="{{ school.phone|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>Website</label>
+    <input type="url" name="website" value="{{ school.website|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>Description</label>
+    <textarea name="description">{{ school.description|default:'' }}</textarea>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" name="is_approved" id="approved" {% if school.is_approved or not school %}checked{% endif %}>
+    <label for="approved">Visible in the app</label>
+  </div>
+  <div class="btn-group" style="margin-top:18px;">
+    <button class="btn btn-primary" type="submit">Save School</button>
+    <a href="{% url 'manage:schools_list' %}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+</div>
+</div>
+{% endblock %}

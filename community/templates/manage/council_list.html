@@ -1,0 +1,59 @@
+{% extends "manage/base.html" %}
+{% block title %}Council Agendas — CalCity Manage{% endblock %}
+{% block content %}
+<div class="anim-in">
+<h1 class="page-title">Council Agendas</h1>
+<p class="page-subtitle">{{ total }} agendas on record</p>
+
+<div class="card anim-slide">
+{% if agendas %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Title</th><th>Meeting Date</th><th>Status</th><th style="width:110px;">Actions</th></tr></thead>
+  <tbody>
+  {% for a in agendas %}
+  <tr>
+    <td style="font-weight:600;">{{ a.title|truncatechars:60 }}</td>
+    <td style="font-size:0.85rem;">{{ a.meeting_date|date:"M j, Y — g:i A" }}</td>
+    <td>
+      <label class="toggle">
+        <input type="checkbox" {% if a.is_approved %}checked{% endif %} data-url="{% url 'manage:council_toggle' a.pk %}">
+        <span class="slider"></span>
+      </label>
+      <span class="badge {% if a.is_approved %}badge-success{% else %}badge-warning{% endif %}">{% if a.is_approved %}Live{% else %}Hidden{% endif %}</span>
+    </td>
+    <td>
+      <div class="btn-group">
+        {% if a.pdf_url %}<a href="{{ a.pdf_url }}" target="_blank" class="btn btn-sm btn-outline">PDF</a>{% endif %}
+        <a href="{% url 'manage:council_delete' a.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if agendas.has_other_pages %}
+<div class="pagination">
+  {% if agendas.has_previous %}<a href="?page={{ agendas.previous_page_number }}">&laquo;</a>{% endif %}
+  <span class="current">Page {{ agendas.number }} of {{ agendas.paginator.num_pages }}</span>
+  {% if agendas.has_next %}<a href="?page={{ agendas.next_page_number }}">&raquo;</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state"><div class="empty-icon">&#128220;</div>No agendas yet.</div>
+{% endif %}
+</div>
+</div>
+<script>
+document.querySelectorAll('.toggle input').forEach(function(t) {
+  t.addEventListener('change', function() {
+    fetch(this.dataset.url, {method:'GET'}).then(function(r){return r.json()}).then(function(d){
+      var badge = this.closest('td').querySelector('.badge');
+      badge.textContent = d.is_approved ? 'Live' : 'Hidden';
+      badge.className = 'badge ' + (d.is_approved ? 'badge-success' : 'badge-warning');
+    }.bind(this));
+  });
+});
+</script>
+{% endblock %}

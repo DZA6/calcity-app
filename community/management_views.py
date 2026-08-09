@@ -20,7 +20,20 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .models import Alert, Business, CommunityTip, Event, NewsItem, School, WeatherInfo
+from .models import (
+    Alert,
+    Business,
+    Comment,
+    CommunityTip,
+    CouncilAgenda,
+    Deal,
+    DiscussionTopic,
+    Event,
+    FeaturedPlacement,
+    NewsItem,
+    School,
+    WeatherInfo,
+)
 
 # ── Dashboard ──────────────────────────────────────────────────────────────
 
@@ -41,6 +54,12 @@ def dashboard(request):
         "recent_alerts": Alert.objects.order_by("-created_at")[:5],
         "recent_events": Event.objects.filter(is_approved=True).order_by("start_date")[:5],
         "pending_tips": CommunityTip.objects.filter(is_approved=False).count(),
+        "school_count": School.objects.count(),
+        "business_count": Business.objects.count(),
+        "deal_count": Deal.objects.filter(is_active=True).count(),
+        "featured_count": FeaturedPlacement.objects.filter(is_active=True, is_paid=True).count(),
+        "topic_count": DiscussionTopic.objects.count(),
+        "comment_count": Comment.objects.count(),
     }
     return render(request, "manage/dashboard.html", ctx)
 
@@ -560,4 +579,316 @@ def business_toggle(request, pk, field):
     return JsonResponse({
         "ok": True, "is_approved": biz.is_approved,
         "is_featured": biz.is_featured, "is_home_based": biz.is_home_based,
+    })
+
+
+# ── Schools ────────────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def schools_list(request):
+    """List all schools with add/edit/delete."""
+    q = request.GET.get("q", "").strip()
+    schools = School.objects.all().order_by("name")
+    if q:
+        schools = schools.filter(name__icontains=q)
+    paginator = Paginator(schools, 25)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "manage/schools_list.html", {
+        "schools": page, "q": q, "total": paginator.count,
+    })
+
+
+@staff_member_required
+def school_edit(request, pk=None):
+    """Add or edit a school."""
+    school = get_object_or_404(School, pk=pk) if pk else None
+    if request.method == "POST":
+        fields = {
+            "name": request.POST.get("name", "").strip(),
+            "address": request.POST.get("address", "").strip(),
+            "type": request.POST.get("type", "elementary"),
+            "phone": request.POST.get("phone", "").strip(),
+            "website": request.POST.get("website", "").strip(),
+            "description": request.POST.get("description", "").strip(),
+            "is_approved": "is_approved" in request.POST,
+        }
+        if not fields["name"]:
+            return render(request, "manage/school_edit.html", {
+                "school": school, "error": "Name is required.",
+            })
+        if school:
+            for k, v in fields.items():
+                setattr(school, k, v)
+            school.save()
+        else:
+            school = School.objects.create(**fields)
+        return redirect("manage:schools_list")
+    return render(request, "manage/school_edit.html", {"school": school})
+
+
+@staff_member_required
+def school_delete(request, pk):
+    """Delete a school."""
+    school = get_object_or_404(School, pk=pk)
+    if request.method == "POST":
+        school.delete()
+        return redirect("manage:schools_list")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": school, "type_name": "School",
+        "cancel_url": reverse("manage:schools_list"),
+    })
+
+
+# ── Council Agendas ─────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def council_list(request):
+    """List council agendas with delete + toggle approve."""
+    agendas = CouncilAgenda.objects.all().order_by("-meeting_date")
+    paginator = Paginator(agendas, 25)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "manage/council_list.html", {
+        "agendas": page, "total": paginator.count,
+    })
+
+
+@staff_member_required
+def council_delete(request, pk):
+    """Delete a council agenda."""
+    agenda = get_object_or_404(CouncilAgenda, pk=pk)
+    if request.method == "POST":
+        agenda.delete()
+        return redirect("manage:council_list")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": agenda, "type_name": "Council Agenda",
+        "cancel_url": reverse("manage:council_list"),
+    })
+
+
+@staff_member_required
+def council_toggle(request, pk):
+    """AJAX: toggle is_approved."""
+    agenda = get_object_or_404(CouncilAgenda, pk=pk)
+    agenda.is_approved = not agenda.is_approved
+    agenda.save()
+    return JsonResponse({"ok": True, "is_approved": agenda.is_approved})
+
+
+# ── Deals ───────────────────────────────────────────────────────────────────
+
+
+@staff_member_required
+def deals_list(request):
+    """List all deals with add/edit/delete."""
+    q = request.GET.get("q", "").strip()
+    deals = Deal.objects.select_related("business").all().order_by("-created_at")
+    if q:
+        deals = deals.filter(title__icontains=q)
+    paginator = Paginator(deals, 25)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "manage/deals_list.html", {
+        "deals": page, "q": q, "total": paginator.count,
+        "businesses": Business.objects.filter(is_approved=True).order_by("name"),
+    })
+
+
+@staff_member_required
+def deal_edit(request, pk=None):
+    """Add or edit a deal."""
+    deal = get_object_or_404(Deal, pk=pk) if pk else None
+    if request.method == "POST":
+        biz_id = request.POST.get("business")
+        fields = {
+            "business": get_object_or_404(Business, pk=biz_id) if biz_id else None,
+            "title": request.POST.get("title", "").strip(),
+            "description": request.POST.get("description", "").strip(),
+            "discount": request.POST.get("discount", "").strip(),
+            "is_active": "is_active" in request.POST,
+        }
+        if not fields["business"] or not fields["title"]:
+            return render(request, "manage/deal_edit.html", {
+                "deal": deal,
+                "businesses": Business.objects.filter(is_approved=True).order_by("name"),
+                "error": "Business and title are required.",
+            })
+        if deal:
+            for k, v in fields.items():
+                setattr(deal, k, v)
+            deal.save()
+        else:
+            deal = Deal.objects.create(**fields)
+        return redirect("manage:deals_list")
+    return render(request, "manage/deal_edit.html", {
+        "deal": deal,
+        "businesses": Business.objects.filter(is_approved=True).order_by("name"),
+    })
+
+
+@staff_member_required
+def deal_delete(request, pk):
+    """Delete a deal."""
+    deal = get_object_or_404(Deal, pk=pk)
+    if request.method == "POST":
+        deal.delete()
+        return redirect("manage:deals_list")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": deal, "type_name": "Deal",
+        "cancel_url": reverse("manage:deals_list"),
+    })
+
+
+@staff_member_required
+def deal_toggle(request, pk):
+    """AJAX: toggle is_active."""
+    deal = get_object_or_404(Deal, pk=pk)
+    deal.is_active = not deal.is_active
+    deal.save()
+    return JsonResponse({"ok": True, "is_active": deal.is_active})
+
+
+# ── Featured Placements ─────────────────────────────────────────────────────
+
+
+@staff_member_required
+def featured_list(request):
+    """List paid promotions with add/edit/delete."""
+    featured = FeaturedPlacement.objects.select_related("business").all().order_by("-created_at")
+    paginator = Paginator(featured, 25)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "manage/featured_list.html", {
+        "featured": page, "total": paginator.count,
+        "businesses": Business.objects.filter(is_approved=True).order_by("name"),
+    })
+
+
+@staff_member_required
+def featured_edit(request, pk=None):
+    """Add or edit a featured placement."""
+    placement = get_object_or_404(FeaturedPlacement, pk=pk) if pk else None
+    if request.method == "POST":
+        biz_id = request.POST.get("business")
+        fields = {
+            "business": get_object_or_404(Business, pk=biz_id) if biz_id else None,
+            "headline": request.POST.get("headline", "").strip(),
+            "start_date": request.POST.get("start_date") or None,
+            "end_date": request.POST.get("end_date") or None,
+            "is_active": "is_active" in request.POST,
+            "is_paid": "is_paid" in request.POST,
+        }
+        if not fields["business"] or not fields["headline"]:
+            return render(request, "manage/featured_edit.html", {
+                "placement": placement,
+                "businesses": Business.objects.filter(is_approved=True).order_by("name"),
+                "error": "Business and headline are required.",
+            })
+        if placement:
+            for k, v in fields.items():
+                setattr(placement, k, v)
+            placement.save()
+        else:
+            placement = FeaturedPlacement.objects.create(**fields)
+        return redirect("manage:featured_list")
+    return render(request, "manage/featured_edit.html", {
+        "placement": placement,
+        "businesses": Business.objects.filter(is_approved=True).order_by("name"),
+    })
+
+
+@staff_member_required
+def featured_delete(request, pk):
+    """Delete a featured placement."""
+    placement = get_object_or_404(FeaturedPlacement, pk=pk)
+    if request.method == "POST":
+        placement.delete()
+        return redirect("manage:featured_list")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": placement, "type_name": "Featured Placement",
+        "cancel_url": reverse("manage:featured_list"),
+    })
+
+
+# ── Community & Moderation ──────────────────────────────────────────────────
+
+
+@staff_member_required
+def moderation_panel(request):
+    """Moderation hub: tips, topics, comments."""
+    tips = CommunityTip.objects.filter(is_approved=False).order_by("-created_at")[:15]
+    recent_tips = CommunityTip.objects.filter(is_approved=True).order_by("-created_at")[:10]
+    topics = DiscussionTopic.objects.select_related("author").all().order_by("-created_at")[:20]
+    comments = Comment.objects.select_related("author").filter(is_hidden=False).order_by("-created_at")[:20]
+    return render(request, "manage/moderation.html", {
+        "pending_tips": tips,
+        "recent_tips": recent_tips,
+        "topics": topics,
+        "comments": comments,
+        "pending_count": tips.count(),
+        "topic_count": DiscussionTopic.objects.count(),
+        "comment_count": Comment.objects.count(),
+        "tip_total": CommunityTip.objects.count(),
+    })
+
+
+@staff_member_required
+def tip_moderate(request, pk, action):
+    """Approve, reject, or delete a community tip."""
+    tip = get_object_or_404(CommunityTip, pk=pk)
+    if action == "approve":
+        tip.is_approved = True
+        tip.save()
+    elif action == "reject":
+        tip.is_approved = False
+        tip.save()
+    elif action == "delete" and request.method == "POST":
+        tip.delete()
+        return redirect("manage:moderation")
+    return redirect("manage:moderation")
+
+
+@staff_member_required
+def topic_toggle(request, pk, field):
+    """AJAX: toggle is_pinned or is_closed on a topic."""
+    topic = get_object_or_404(DiscussionTopic, pk=pk)
+    if field == "pin":
+        topic.is_pinned = not topic.is_pinned
+    elif field == "close":
+        topic.is_closed = not topic.is_closed
+    topic.save()
+    return JsonResponse({"ok": True, "is_pinned": topic.is_pinned, "is_closed": topic.is_closed})
+
+
+@staff_member_required
+def topic_delete(request, pk):
+    """Delete a discussion topic."""
+    topic = get_object_or_404(DiscussionTopic, pk=pk)
+    if request.method == "POST":
+        topic.delete()
+        return redirect("manage:moderation")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": topic, "type_name": "Discussion Topic",
+        "cancel_url": reverse("manage:moderation"),
+    })
+
+
+@staff_member_required
+def comment_toggle(request, pk):
+    """AJAX: hide/show a comment."""
+    comment = get_object_or_404(Comment, pk=pk)
+    comment.is_hidden = not comment.is_hidden
+    comment.save()
+    return JsonResponse({"ok": True, "is_hidden": comment.is_hidden})
+
+
+@staff_member_required
+def comment_delete(request, pk):
+    """Delete a comment."""
+    comment = get_object_or_404(Comment, pk=pk)
+    if request.method == "POST":
+        comment.delete()
+        return redirect("manage:moderation")
+    return render(request, "manage/confirm_delete.html", {
+        "obj": comment, "type_name": "Comment",
+        "cancel_url": reverse("manage:moderation"),
     })

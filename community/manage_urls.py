@@ -41,4 +41,36 @@ urlpatterns = [
     path("businesses/<int:pk>/", views.business_edit, name="business_edit"),
     path("businesses/<int:pk>/delete/", views.business_delete, name="business_delete"),
     path("businesses/<int:pk>/toggle/<str:field>/", views.business_toggle, name="business_toggle"),
+
+    # Schools
+    path("schools/", views.schools_list, name="schools_list"),
+    path("schools/new/", views.school_edit, name="school_edit"),
+    path("schools/<int:pk>/", views.school_edit, name="school_edit"),
+    path("schools/<int:pk>/delete/", views.school_delete, name="school_delete"),
+
+    # Council Agendas
+    path("council/", views.council_list, name="council_list"),
+    path("council/<int:pk>/delete/", views.council_delete, name="council_delete"),
+    path("council/<int:pk>/toggle/", views.council_toggle, name="council_toggle"),
+
+    # Deals
+    path("deals/", views.deals_list, name="deals_list"),
+    path("deals/new/", views.deal_edit, name="deal_edit"),
+    path("deals/<int:pk>/", views.deal_edit, name="deal_edit"),
+    path("deals/<int:pk>/delete/", views.deal_delete, name="deal_delete"),
+    path("deals/<int:pk>/toggle/", views.deal_toggle, name="deal_toggle"),
+
+    # Featured Placements
+    path("featured/", views.featured_list, name="featured_list"),
+    path("featured/new/", views.featured_edit, name="featured_edit"),
+    path("featured/<int:pk>/", views.featured_edit, name="featured_edit"),
+    path("featured/<int:pk>/delete/", views.featured_delete, name="featured_delete"),
+
+    # Community & Moderation
+    path("moderation/", views.moderation_panel, name="moderation"),
+    path("moderation/tips/<int:pk>/<str:action>/", views.tip_moderate, name="tip_moderate"),
+    path("moderation/topics/<int:pk>/toggle/<str:field>/", views.topic_toggle, name="topic_toggle"),
+    path("moderation/topics/<int:pk>/delete/", views.topic_delete, name="topic_delete"),
+    path("moderation/comments/<int:pk>/toggle/", views.comment_toggle, name="comment_toggle"),
+    path("moderation/comments/<int:pk>/delete/", views.comment_delete, name="comment_delete"),
 ]
