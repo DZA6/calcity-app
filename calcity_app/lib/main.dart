@@ -52,10 +52,17 @@ class CalCityApp extends StatelessWidget {
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               );
-              return child ?? const SizedBox.shrink();
+              // Apply user font-size preference
+              final media = MediaQuery.of(context);
+              return MediaQuery(
+                data: media.copyWith(
+                  textScaler: TextScaler.linear(settings.fontScale),
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
             },
-            theme: _buildLightTheme(),
-            darkTheme: _buildDarkTheme(),
+            theme: _buildLightTheme(settings.accentColorValue),
+            darkTheme: _buildDarkTheme(settings.accentColorValue),
             themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
             home: settings.initialized && !settings.onboarded
                 ? OnboardingScreen(onComplete: () => settings.setOnboarded(true))
@@ -66,37 +73,37 @@ class CalCityApp extends StatelessWidget {
     );
   }
 
-  // ---- Dark theme (neon green on black) ----
-  ThemeData _buildDarkTheme() {
-    const cs = ColorScheme(
+  // ---- Dark theme (accent color on black) ----
+  ThemeData _buildDarkTheme(Color accent) {
+    final cs = ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFF00FF41),
-      onPrimary: Color(0xFF000000),
-      primaryContainer: Color(0xFF003D10),
-      onPrimaryContainer: Color(0xFF7BFF90),
-      secondary: Color(0xFF39FF14),
-      onSecondary: Color(0xFF000000),
-      secondaryContainer: Color(0xFF003D10),
-      onSecondaryContainer: Color(0xFF7BFF90),
-      tertiary: Color(0xFF00E5FF),
-      onTertiary: Color(0xFF000000),
-      tertiaryContainer: Color(0xFF003540),
-      onTertiaryContainer: Color(0xFF82F3FF),
-      error: Color(0xFFFF5252),
-      errorContainer: Color(0xFF93000A),
-      onError: Color(0xFF000000),
-      onErrorContainer: Color(0xFFFFDAD6),
-      surface: Color(0xFF0D0D0D),
-      onSurface: Color(0xFFE8E8E8),
-      surfaceVariant: Color(0xFF1E1E1E),
-      onSurfaceVariant: Color(0xFFB0B8B0),
-      outline: Color(0xFF2A3A2A),
-      outlineVariant: Color(0xFF1A2A1A),
-      inverseSurface: Color(0xFFE0FFE0),
-      onInverseSurface: Color(0xFF0A0A0A),
-      inversePrimary: Color(0xFF00FF41),
-      shadow: Color(0xFF000000),
-      surfaceTint: Color(0xFF00FF41),
+      primary: accent,
+      onPrimary: accent.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+      primaryContainer: Color.lerp(accent, Colors.black, 0.65)!,
+      onPrimaryContainer: Color.lerp(accent, Colors.white, 0.75)!,
+      secondary: Color.lerp(accent, Colors.white, 0.25)!,
+      onSecondary: accent.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+      secondaryContainer: Color.lerp(accent, Colors.black, 0.7)!,
+      onSecondaryContainer: Color.lerp(accent, Colors.white, 0.7)!,
+      tertiary: Color.lerp(accent, const Color(0xFF00E5FF), 0.5)!,
+      onTertiary: Colors.black,
+      tertiaryContainer: Color.lerp(accent, Colors.black, 0.8)!,
+      onTertiaryContainer: Color.lerp(accent, Colors.white, 0.8)!,
+      error: const Color(0xFFFF5252),
+      errorContainer: const Color(0xFF93000A),
+      onError: const Color(0xFF000000),
+      onErrorContainer: const Color(0xFFFFDAD6),
+      surface: const Color(0xFF0D0D0D),
+      onSurface: const Color(0xFFE8E8E8),
+      surfaceVariant: const Color(0xFF1E1E1E),
+      onSurfaceVariant: const Color(0xFFB0B8B0),
+      outline: Color.lerp(accent, Colors.black, 0.8)!,
+      outlineVariant: const Color(0xFF1A2A1A),
+      inverseSurface: const Color(0xFFE0FFE0),
+      onInverseSurface: const Color(0xFF0A0A0A),
+      inversePrimary: accent,
+      shadow: const Color(0xFF000000),
+      surfaceTint: accent,
     );
 
     return ThemeData(
@@ -165,36 +172,36 @@ class CalCityApp extends StatelessWidget {
   }
 
   // ---- Light theme ----
-  ThemeData _buildLightTheme() {
-    const cs = ColorScheme(
+  ThemeData _buildLightTheme(Color accent) {
+    final cs = ColorScheme(
       brightness: Brightness.light,
-      primary: Color(0xFFB8573E),
-      onPrimary: Color(0xFFFFFFFF),
-      primaryContainer: Color(0xFFFFDBD0),
-      onPrimaryContainer: Color(0xFF3B0D02),
-      secondary: Color(0xFF8B5A3C),
-      onSecondary: Color(0xFFFFFFFF),
-      secondaryContainer: Color(0xFFFFDCC2),
-      onSecondaryContainer: Color(0xFF311A06),
-      tertiary: Color(0xFF5F6B41),
-      onTertiary: Color(0xFFFFFFFF),
-      tertiaryContainer: Color(0xFFE3F2BB),
-      onTertiaryContainer: Color(0xFF1B2106),
-      error: Color(0xFFBA1A1A),
-      errorContainer: Color(0xFFFFDAD6),
-      onError: Color(0xFFFFFFFF),
-      onErrorContainer: Color(0xFF410002),
-      surface: Color(0xFFF8F9FA),
-      onSurface: Color(0xFF1A1C1E),
-      surfaceVariant: Color(0xFFF0EEE9),
-      onSurfaceVariant: Color(0xFF44474F),
-      outline: Color(0xFFE0E0E0),
-      outlineVariant: Color(0xFFE8E8E8),
-      inverseSurface: Color(0xFF2F3033),
-      onInverseSurface: Color(0xFFF1F0F4),
-      inversePrimary: Color(0xFFFFB59E),
-      shadow: Color(0xFF000000),
-      surfaceTint: Color(0xFFB8573E),
+      primary: accent,
+      onPrimary: accent.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+      primaryContainer: Color.lerp(accent, Colors.white, 0.8)!,
+      onPrimaryContainer: Color.lerp(accent, Colors.black, 0.75)!,
+      secondary: Color.lerp(accent, Colors.black, 0.15)!,
+      onSecondary: Colors.white,
+      secondaryContainer: Color.lerp(accent, Colors.white, 0.75)!,
+      onSecondaryContainer: Color.lerp(accent, Colors.black, 0.8)!,
+      tertiary: const Color(0xFF5F6B41),
+      onTertiary: const Color(0xFFFFFFFF),
+      tertiaryContainer: const Color(0xFFE3F2BB),
+      onTertiaryContainer: const Color(0xFF1B2106),
+      error: const Color(0xFFBA1A1A),
+      errorContainer: const Color(0xFFFFDAD6),
+      onError: const Color(0xFFFFFFFF),
+      onErrorContainer: const Color(0xFF410002),
+      surface: const Color(0xFFF8F9FA),
+      onSurface: const Color(0xFF1A1C1E),
+      surfaceVariant: const Color(0xFFF0EEE9),
+      onSurfaceVariant: const Color(0xFF44474F),
+      outline: const Color(0xFFE0E0E0),
+      outlineVariant: const Color(0xFFE8E8E8),
+      inverseSurface: const Color(0xFF2F3033),
+      onInverseSurface: const Color(0xFFF1F0F4),
+      inversePrimary: Color.lerp(accent, Colors.white, 0.5)!,
+      shadow: const Color(0xFF000000),
+      surfaceTint: accent,
     );
 
     return ThemeData(
@@ -371,6 +378,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
     {'slug': 'business', 'label': 'Business', 'icon': Icons.store_outlined, 'color': Color(0xFFB8573E)},
     {'slug': 'traffic', 'label': 'Traffic', 'icon': Icons.traffic_outlined, 'color': Color(0xFF8B6B3A)},
     {'slug': 'community', 'label': 'Community', 'icon': Icons.celebration_outlined, 'color': Color(0xFF9B5E3A)},
+    {'slug': 'lost_pets', 'label': 'Lost Pets', 'icon': Icons.pets_outlined, 'color': Color(0xFF7A4E8C)},
+    {'slug': 'gigs', 'label': 'Gigs & Services', 'icon': Icons.handyman_outlined, 'color': Color(0xFF3E6B8C)},
+    {'slug': 'neighbor', 'label': 'Neighbor Love', 'icon': Icons.favorite_outline, 'color': Color(0xFFC0455A)},
   ];
 
   static final _categoryColors = <String, Color>{

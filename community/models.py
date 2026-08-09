@@ -16,6 +16,9 @@ class NewsItem(models.Model):
         ("business", "Business & Economy"),
         ("traffic", "Traffic & Roads"),
         ("community", "Community Events"),
+        ("lost_pets", "Lost Pets"),
+        ("gigs", "Gigs & Services"),
+        ("neighbor", "Neighbor Appreciation"),
     ]
 
     title = models.CharField(max_length=200)
