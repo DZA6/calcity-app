@@ -15,6 +15,7 @@ import 'screens/alerts_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/deals_screen.dart';
 import 'screens/conversations_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +54,9 @@ class CalCityApp extends StatelessWidget {
             theme: _buildLightTheme(),
             darkTheme: _buildDarkTheme(),
             themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
-            home: const MainShell(),
+            home: settings.initialized && !settings.onboarded
+                ? OnboardingScreen(onComplete: () => settings.setOnboarded(true))
+                : const MainShell(),
           ),
         );
       },

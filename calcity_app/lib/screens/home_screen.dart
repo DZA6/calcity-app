@@ -543,6 +543,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                   _featuredPlacementCard(context, placements[i]),
             ),
           ),
+        const SizedBox(height: 10),
+        _freelancerInviteCard(context),
       ],
     );
   }
@@ -665,6 +667,54 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               ),
             ),
             Icon(Icons.chevron_right, color: cs.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Freelancer nudge — encourages account signup.
+  Widget _freelancerInviteCard(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SignupScreen()),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: LinearGradient(
+            colors: [Colors.blue.withValues(alpha: 0.14), Colors.teal.withValues(alpha: 0.08)],
+          ),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.person_outline, color: Colors.blue, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Are you a freelancer?',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  const SizedBox(height: 2),
+                  Text('Offer your skills and get paid directly.',
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.blue),
           ],
         ),
       ),

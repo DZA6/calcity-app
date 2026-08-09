@@ -11,6 +11,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _keyShowFreelancers = 'show_freelancers';
   static const _keyShowAlerts = 'show_alerts';
   static const _keyShowCouncil = 'show_council';
+  static const _keyOnboarded = 'onboarded';
 
   bool _darkMode = false; // light by default
   bool _notifications = true;
@@ -22,6 +23,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _showAlerts = true;
   bool _showCouncil = true;
   bool _initialized = false;
+  bool _onboarded = false;
 
   bool get darkMode => _darkMode;
   bool get notifications => _notifications;
@@ -33,6 +35,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get showAlerts => _showAlerts;
   bool get showCouncil => _showCouncil;
   bool get initialized => _initialized;
+  bool get onboarded => _onboarded;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -45,6 +48,7 @@ class SettingsProvider extends ChangeNotifier {
     _showFreelancers = prefs.getBool(_keyShowFreelancers) ?? true;
     _showAlerts = prefs.getBool(_keyShowAlerts) ?? true;
     _showCouncil = prefs.getBool(_keyShowCouncil) ?? true;
+    _onboarded = prefs.getBool(_keyOnboarded) ?? false;
     _initialized = true;
     notifyListeners();
   }
@@ -110,5 +114,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyShowCouncil, value);
+  }
+
+  Future<void> setOnboarded(bool value) async {
+    _onboarded = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyOnboarded, value);
   }
 }
