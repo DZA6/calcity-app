@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../models/social.dart';
 import '../services/api_service.dart';
 
 /// Form to start a new discussion topic. Returns the created topic
