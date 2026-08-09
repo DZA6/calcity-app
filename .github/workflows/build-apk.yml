@@ -1,0 +1,66 @@
+name: Build APK
+
+# Automatically builds a new APK whenever code is pushed to main.
+# The APK is uploaded to a GitHub Release tagged "latest" (updated
+# every build) AND saved as a workflow artifact.
+#
+# You can also trigger manually:
+#   GitHub repo → Actions → "Build APK" → "Run workflow"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'calcity_app/**'
+      - '!calcity_app/build/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.x'
+
+      - name: Cache Flutter/Android build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ${{ runner.tool_cache }}/flutter
+          key: flutter-${{ runner.os }}-${{ hashFiles('calcity_app/pubspec.lock') }}
+
+      - name: Install dependencies
+        working-directory: calcity_app
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: calcity_app
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://calcityapp-MMSantelopevalley.pythonanywhere.com
+
+      - name: Upload APK to release "latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: CalCity Latest Build
+          body: |
+            Auto-built from commit `${{ github.sha }}`.
+            Download `CalCity.apk` and install on your phone.
+            (Uninstall the old app first if it crashes on launch.)
+          files: calcity_app/build/app/outputs/flutter-apk/app-release.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
