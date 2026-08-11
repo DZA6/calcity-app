@@ -49,8 +49,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     super.initState();
     _loadWeather();
     _loadTopics();
-    // Refresh live weather every 20 min so the card changes through the day.
-    _weatherTimer = Timer.periodic(const Duration(minutes: 20), (_) => _loadWeather());
+    // Refresh live weather every 20 min so the card changes through the day
+    // (topics ride the same tick so an always-open app still gets the fresh
+    // morning question without a manual refresh).
+    _weatherTimer = Timer.periodic(const Duration(minutes: 20), (_) {
+      _loadWeather();
+      _loadTopics();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final prov = context.read<ContentProvider>();
       if (!prov.isInitialized) prov.refreshAll();
