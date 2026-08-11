@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:calcity_app/main.dart';
 
 void main() {
-  testWidgets('LAYOUT DIAGNOSTIC: app fills the screen', (tester) async {
+  Future<void> _run(WidgetTester tester) async {
     // Phone-like viewport: 1080x1920 physical @ 2.75 density = 392x698 logical
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 2.75;
@@ -40,5 +40,16 @@ void main() {
         reason: 'hero title should render');
 
     debugPrint(log.toString());
+  }
+
+  testWidgets('LAYOUT DIAGNOSTIC: app fills the screen', (tester) async {
+    // The app's MaterialApp.builder installs a custom ErrorWidget.builder;
+    // restore the harness default before the framework's post-test check.
+    final origBuilder = ErrorWidget.builder;
+    try {
+      await _run(tester);
+    } finally {
+      ErrorWidget.builder = origBuilder;
+    }
   });
 }

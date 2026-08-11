@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:calcity_app/models/content.dart';
 import 'package:calcity_app/models/social.dart';
@@ -110,9 +111,16 @@ void main() {
   /// (Google Mobile Ads and Firebase degrade gracefully).
   testWidgets('CalCity app renders without crashing',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const CalCityApp());
-    await tester.pump();
-    expect(find.byType(CalCityApp), findsOneWidget);
+    // The app's MaterialApp.builder installs a custom ErrorWidget.builder;
+    // restore the harness default before the framework's post-test check.
+    final origBuilder = ErrorWidget.builder;
+    try {
+      await tester.pumpWidget(const CalCityApp());
+      await tester.pump();
+      expect(find.byType(CalCityApp), findsOneWidget);
+    } finally {
+      ErrorWidget.builder = origBuilder;
+    }
   });
 
   group('ReactionSummary', () {
