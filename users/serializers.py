@@ -7,7 +7,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework import serializers
 
-from .models import EmailVerificationToken
+from .models import EmailVerificationToken, PasswordResetToken
 from .validators import ComplexityValidator, CommonPasswordValidator, MinimumLengthValidator
 
 User = get_user_model()
@@ -126,3 +126,39 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "username", "email", "date_joined"]
         read_only_fields = fields
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Step 1 — email to send a reset code to."""
+
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Step 2 — code + new password. Same strength rules as registration."""
+
+    email = serializers.EmailField(required=True)
+    code = serializers.CharField(required=True, max_length=6)
+    new_password = serializers.CharField(required=True, write_only=True)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_code(self, value):
+        value = value.strip()
+        if not value.isdigit() or len(value) != 6:
+            raise serializers.ValidationError("The code must be 6 digits.")
+        return value
+
+    def validate_new_password(self, value):
+        for validator in [
+            MinimumLengthValidator(min_length=10),
+            ComplexityValidator(),
+            CommonPasswordValidator(),
+        ]:
+            validator.validate(value)
+        validate_password(value)
+        return value

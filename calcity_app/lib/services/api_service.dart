@@ -379,6 +379,58 @@ class ApiService {
     return null;
   }
 
+  // ── Auth: password reset ─────────────────────────────────────────
+
+  /// Step 1 — request a 6-digit reset code for [email].
+  /// Returns the server message, or an error string on failure.
+  Future<String?> requestPasswordReset(String email) async {
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('$baseUrl/api/auth/password-reset/'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'email': email.trim()}),
+          )
+          .timeout(_timeout);
+      final data = json.decode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200) {
+        return data['message'] as String? ?? 'Check your email for the reset code.';
+      }
+      return data['error'] as String? ?? 'Something went wrong. Try again.';
+    } catch (_) {
+      return 'Network error. Check your connection and try again.';
+    }
+  }
+
+  /// Step 2 — confirm the code and set a new password.
+  /// Returns null on success, or an error string on failure.
+  Future<String?> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('$baseUrl/api/auth/password-reset/confirm/'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'email': email.trim(),
+              'code': code.trim(),
+              'new_password': newPassword,
+            }),
+          )
+          .timeout(_timeout);
+      final data = json.decode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200) {
+        return null; // success
+      }
+      return data['error'] as String? ?? 'Something went wrong. Try again.';
+    } catch (_) {
+      return 'Network error. Check your connection and try again.';
+    }
+  }
+
   Future<List<SchoolItem>> fetchSchools() async {
     try {
       final response = await http

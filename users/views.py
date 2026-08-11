@@ -1,5 +1,9 @@
-"""Auth views — register, verify email, login, user profile."""
+"""Auth views — register, verify email, login, password reset, user profile."""
+import secrets
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 from rest_framework import status
@@ -8,9 +12,11 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import EmailVerificationToken
+from .models import EmailVerificationToken, PasswordResetToken
 from .serializers import (
     LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     RegisterSerializer,
     UserSerializer,
     VerifyEmailSerializer,
@@ -158,3 +164,110 @@ class UserProfileView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class PasswordResetRequestView(APIView):
+    """Step 1 — email a 6-digit reset code. Never reveals whether the email exists.
+
+    Rate-limited to 5 requests per hour per IP.
+    """
+
+    permission_classes = [AllowAny]
+
+    @method_decorator(ratelimit(key="ip", rate="5/h", method="POST", block=False))
+    def post(self, request):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many requests. Please try again in an hour."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"error": "Enter a valid email address."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = serializer.validated_data["email"]
+        user = User.objects.filter(email__iexact=email).first()
+
+        # Same response whether or not the account exists (no account probing).
+        generic = {"message": "If that email is registered, a reset code is on its way."}
+        if user is None:
+            return Response(generic)
+
+        # Invalidate any outstanding codes for this user.
+        PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        PasswordResetToken.objects.create(user=user, code=code)
+
+        try:
+            send_mail(
+                subject="Your CalCity password reset code",
+                message=(
+                    f"Hi {user.username},\n\n"
+                    f"Your CalCity password reset code is: {code}\n\n"
+                    f"Enter it in the app within 30 minutes to set a new password.\n\n"
+                    f"If you didn't request this, you can safely ignore this email.\n\n"
+                    f"— The CalCity Team"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass  # Never block the request on email delivery issues
+
+        return Response(generic)
+
+
+class PasswordResetConfirmView(APIView):
+    """Step 2 — verify the code and set a new password.
+
+    Rate-limited to 10 attempts per hour per IP to slow code guessing.
+    """
+
+    permission_classes = [AllowAny]
+
+    @method_decorator(ratelimit(key="ip", rate="10/h", method="POST", block=False))
+    def post(self, request):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many attempts. Please try again in an hour."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if not serializer.is_valid():
+            errors = {}
+            for field, msgs in serializer.errors.items():
+                errors[field] = msgs[0] if isinstance(msgs, list) else str(msgs)
+            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data["email"]
+        code = serializer.validated_data["code"]
+        new_password = serializer.validated_data["new_password"]
+
+        user = User.objects.filter(email__iexact=email).first()
+        invalid = {"error": "Invalid or expired reset code."}
+        if user is None:
+            return Response(invalid, status=status.HTTP_400_BAD_REQUEST)
+
+        token = (
+            PasswordResetToken.objects.filter(user=user, code=code, is_used=False)
+            .order_by("-created_at")
+            .first()
+        )
+        if token is None or token.is_expired():
+            return Response(invalid, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        # Code is single-use; invalidate any other outstanding codes too.
+        token.is_used = True
+        token.save()
+        PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
+
+        return Response({"message": "Password reset successfully. You can now sign in."})
