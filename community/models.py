@@ -92,6 +92,10 @@ class Business(models.Model):
     address = models.CharField(max_length=300, blank=True)
     is_home_based = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
+    is_demo = models.BooleanField(
+        default=False,
+        help_text="Fictional example profile — the app shows a DEMO badge on it",
+    )
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

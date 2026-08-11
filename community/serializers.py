@@ -69,7 +69,8 @@ class BusinessSerializer(serializers.ModelSerializer, MediaUrlMixin):
         fields = "__all__"
         read_only_fields = ["id", "name", "description", "category", "image",
                             "contact_phone", "contact_email", "website", "address",
-                            "is_home_based", "is_featured", "is_approved", "created_at"]
+                            "is_home_based", "is_featured", "is_demo",
+                            "is_approved", "created_at"]
 
     def get_image_url(self, obj):
         return self._abs("image")

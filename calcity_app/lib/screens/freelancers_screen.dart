@@ -60,9 +60,40 @@ class _FreelancersScreenState extends State<FreelancersScreen> {
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _freelancers.length,
-                  itemBuilder: (ctx, i) => _buildFreelancerCard(_freelancers[i], cs),
+                  itemCount: _freelancers.length + 1, // +1 = demo banner
+                  itemBuilder: (ctx, i) {
+                    if (i == 0) return _demoBanner(cs);
+                    return _buildFreelancerCard(_freelancers[i - 1], cs);
+                  },
                 ),
+    );
+  }
+
+  // Explains that the current profiles are examples, not real people.
+  Widget _demoBanner(ColorScheme cs) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD600).withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFD600).withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded, color: Color(0xFFFFB300), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'These are DEMO examples showing what freelancer profiles will look like. '
+              'None of these are real people or real phone numbers — real freelancer '
+              'listings are coming soon.',
+              style: TextStyle(fontSize: 12.5, color: cs.onSurface.withValues(alpha: 0.85), height: 1.4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -89,7 +120,25 @@ class _FreelancersScreenState extends State<FreelancersScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(biz.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(biz.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                          ),
+                          if (biz.isDemo) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD600).withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text('DEMO',
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFFB28704), letterSpacing: 0.5)),
+                            ),
+                          ],
+                        ],
+                      ),
                       if (biz.description != null && biz.description!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),

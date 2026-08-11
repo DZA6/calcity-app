@@ -478,6 +478,7 @@ tr { animation: fadeIn 0.25s ease-out both; }
     <a href="{% url 'manage:alerts' %}" class="{% if 'alert' in request.resolver_match.url_name %}active{% endif %}">Alerts</a>
     <a href="{% url 'manage:events_list' %}" class="{% if 'events' in request.resolver_match.url_name %}active{% endif %}">Events</a>
     <a href="{% url 'manage:businesses_list' %}" class="{% if 'business' in request.resolver_match.url_name %}active{% endif %}">Businesses</a>
+    <a href="{% url 'manage:businesses_list' %}?category=freelancer" class="{% if request.GET.category == 'freelancer' %}active{% endif %}">Freelancers</a>
     <a href="{% url 'manage:schools_list' %}" class="{% if 'school' in request.resolver_match.url_name %}active{% endif %}">Schools</a>
     <a href="{% url 'manage:council_list' %}" class="{% if 'council' in request.resolver_match.url_name %}active{% endif %}">Council</a>
     <a href="{% url 'manage:deals_list' %}" class="{% if 'deal' in request.resolver_match.url_name %}active{% endif %}">Deals</a>

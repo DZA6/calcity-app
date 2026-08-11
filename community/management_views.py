@@ -495,6 +495,8 @@ def businesses_list(request):
     qs = Business.objects.all()
     if category:
         qs = qs.filter(category=category)
+    if request.GET.get("demo") == "1":
+        qs = qs.filter(is_demo=True)
     if status == "approved":
         qs = qs.filter(is_approved=True)
     elif status == "pending":
@@ -508,6 +510,7 @@ def businesses_list(request):
         "categories": Business.CATEGORY_CHOICES,
         "current_category": category,
         "current_status": status,
+        "current_demo": request.GET.get("demo", ""),
     }
     return render(request, "manage/businesses_list.html", ctx)
 
@@ -529,6 +532,7 @@ def business_edit(request, pk=None):
         address = request.POST.get("address", "").strip()
         is_home_based = request.POST.get("is_home_based") == "on"
         is_featured = request.POST.get("is_featured") == "on"
+        is_demo = request.POST.get("is_demo") == "on"
         is_approved = request.POST.get("is_approved") == "on"
 
         if not name:
@@ -546,6 +550,7 @@ def business_edit(request, pk=None):
             biz.address = address
             biz.is_home_based = is_home_based
             biz.is_featured = is_featured
+            biz.is_demo = is_demo
             biz.is_approved = is_approved
         else:
             biz = Business(
@@ -553,7 +558,7 @@ def business_edit(request, pk=None):
                 contact_phone=contact_phone, contact_email=contact_email,
                 website=website, address=address,
                 is_home_based=is_home_based, is_featured=is_featured,
-                is_approved=is_approved,
+                is_demo=is_demo, is_approved=is_approved,
             )
 
         if request.FILES.get("image"):

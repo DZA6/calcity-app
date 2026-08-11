@@ -202,6 +202,7 @@ class BusinessItem {
   final String? address;
   final bool isHomeBased;
   final bool isFeatured;
+  final bool isDemo;
 
   BusinessItem({
     required this.id,
@@ -215,6 +216,7 @@ class BusinessItem {
     this.address,
     this.isHomeBased = false,
     this.isFeatured = false,
+    this.isDemo = false,
   });
 
   factory BusinessItem.fromJson(Map<String, dynamic> json) {
@@ -230,6 +232,7 @@ class BusinessItem {
       address: json['address'] as String?,
       isHomeBased: json['is_home_based'] as bool? ?? false,
       isFeatured: json['is_featured'] as bool? ?? false,
+      isDemo: json['is_demo'] as bool? ?? false,
     );
   }
 

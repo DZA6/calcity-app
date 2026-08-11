@@ -74,6 +74,10 @@
       <label for="id_featured">Featured — show prominently</label>
     </div>
     <div class="checkbox-row">
+      <input type="checkbox" name="is_demo" id="id_demo" {% if biz.is_demo %}checked{% endif %}>
+      <label for="id_demo">Demo example — fake profile, shows a DEMO badge in the app</label>
+    </div>
+    <div class="checkbox-row">
       <input type="checkbox" name="is_approved" id="id_approved" {% if biz.is_approved %}checked{% endif %}>
       <label for="id_approved">Approved — visible in app</label>
     </div>

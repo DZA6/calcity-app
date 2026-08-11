@@ -52,6 +52,7 @@
           <a href="{% url 'manage:business_edit' biz.pk %}" style="color:var(--text);text-decoration:none;font-weight:500;">
             {{ biz.name|truncatechars:40 }}
           </a>
+          {% if biz.is_demo %}<span class="badge badge-warning" style="margin-left:6px;">DEMO</span>{% endif %}
         </td>
         <td><span class="badge badge-neutral">{{ biz.get_category_display }}</span></td>
         <td style="font-size:0.85rem;">{{ biz.contact_phone|default:"—" }}</td>
