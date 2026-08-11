@@ -10,6 +10,8 @@ import '../providers/content_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/weather_service.dart';
+import '../services/api_service.dart';
+import '../models/social.dart';
 import '../widgets/news_card.dart';
 import '../widgets/event_card.dart';
 import '../widgets/business_card.dart';
@@ -25,6 +27,8 @@ import 'deals_screen.dart';
 import 'council_screen.dart';
 import 'freelancers_screen.dart';
 import 'category_screen.dart';
+import 'conversations_screen.dart';
+import 'topic_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,11 +42,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
   LiveWeather? _liveWeather;
   Timer? _weatherTimer;
+  List<DiscussionTopicItem> _dailyTopics = const [];
 
   @override
   void initState() {
     super.initState();
     _loadWeather();
+    _loadTopics();
     // Refresh live weather every 20 min so the card changes through the day.
     _weatherTimer = Timer.periodic(const Duration(minutes: 20), (_) => _loadWeather());
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -60,6 +66,14 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   Future<void> _loadWeather() async {
     final w = await WeatherService.fetch();
     if (mounted && w != null) setState(() => _liveWeather = w);
+  }
+
+  /// Today's discussion topics for the home section (pinned first, capped at 3).
+  Future<void> _loadTopics() async {
+    final topics = await ApiService().fetchTopics();
+    if (mounted && topics.isNotEmpty) {
+      setState(() => _dailyTopics = topics.take(3).toList());
+    }
   }
 
   void _push(Widget screen) =>
@@ -101,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
           }
           return RefreshIndicator(
             onRefresh: () async {
-              await Future.wait([prov.refreshAll(), _loadWeather()]);
+              await Future.wait([prov.refreshAll(), _loadWeather(), _loadTopics()]);
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 40),
@@ -124,6 +138,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     // Quick actions row
     items.add(_quickActions(context, cs));
     items.add(const SizedBox(height: 12));
+
+    // Today's discussion (daily Seddit topics — fresh every morning)
+    if (_dailyTopics.isNotEmpty) {
+      items.add(_dailyDiscussionSection(context, cs));
+      items.add(const SizedBox(height: 12));
+    }
 
     // Active alert banner
     if (settings.showAlerts && prov.activeAlerts.isNotEmpty) {
@@ -948,7 +968,136 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     return const Color(0xFF00E676);
   }
 
-  // ---- Alert banner ----
+  // ---- Today's discussion (daily Seddit topics) ----
+  Widget _dailyDiscussionSection(BuildContext context, ColorScheme cs) {
+    final featured = _dailyTopics.first;
+    final rest = _dailyTopics.skip(1).take(2).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.forum_rounded, size: 18, color: Color(0xFF00E5FF)),
+            const SizedBox(width: 6),
+            Expanded(child: _sectionHeader(cs, "TODAY'S DISCUSSION")),
+            TextButton(
+              onPressed: () => _push(const ConversationsScreen()),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              child: const Text('See all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        _dailyTopicCard(context, cs, featured),
+        for (final t in rest) ...[
+          const SizedBox(height: 6),
+          _dailyTopicRow(context, cs, t),
+        ],
+      ],
+    );
+  }
+
+  Widget _dailyTopicCard(BuildContext context, ColorScheme cs, DiscussionTopicItem t) {
+    return GestureDetector(
+      onTap: () => _push(TopicScreen(topicId: t.id)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              cs.primary.withValues(alpha: 0.16),
+              cs.tertiary.withValues(alpha: 0.08),
+            ],
+          ),
+          border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text('DAILY QUESTION',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: cs.primary, letterSpacing: 0.6)),
+                ),
+                const Spacer(),
+                Text('by ${t.author}',
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(t.title,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
+            if (t.body.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(t.body,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant)),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.chat_bubble_outline_rounded, size: 13, color: cs.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text('${t.commentCount} comments',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
+                const Spacer(),
+                Text('Join in',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.primary)),
+                Icon(Icons.chevron_right, size: 16, color: cs.primary),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dailyTopicRow(BuildContext context, ColorScheme cs, DiscussionTopicItem t) {
+    return GestureDetector(
+      onTap: () => _push(TopicScreen(topicId: t.id)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(t.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chat_bubble_outline_rounded, size: 13, color: cs.onSurfaceVariant),
+            const SizedBox(width: 3),
+            Text('${t.commentCount}',
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            Icon(Icons.chevron_right, size: 16, color: cs.outline),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---- Active alert banner ----
   Widget _alertBanner(BuildContext context, AlertItem alert) {
     final sev = alert.severity.toLowerCase();
     final color = sev == 'emergency'
