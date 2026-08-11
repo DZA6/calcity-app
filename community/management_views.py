@@ -18,8 +18,10 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+
 from django.views.decorators.http import require_http_methods
 
+from .services.weather_service import get_live_weather
 from .models import (
     Alert,
     Business,
@@ -50,6 +52,7 @@ def dashboard(request):
         ).count(),
         "weather_count": WeatherInfo.objects.count(),
         "latest_weather": WeatherInfo.objects.filter(is_active=True).first(),
+        "live_weather": get_live_weather(),
         "recent_news": NewsItem.objects.order_by("-created_at")[:8],
         "recent_alerts": Alert.objects.order_by("-created_at")[:5],
         "recent_events": Event.objects.filter(is_approved=True).order_by("start_date")[:5],
@@ -195,9 +198,12 @@ def news_toggle(request, pk, field):
 
 @staff_member_required
 def weather_panel(request):
-    """Manage weather updates — edit the latest or create new."""
+    """Manage weather updates — live conditions + manual advisory posts."""
     latest = WeatherInfo.objects.filter(is_active=True).first()
     all_weather = WeatherInfo.objects.order_by("-created_at")[:10]
+
+    # ?refresh=1 bypasses the cache and pulls fresh live conditions
+    live = get_live_weather(force=request.GET.get("refresh") == "1")
 
     if request.method == "POST":
         headline = request.POST.get("headline", "").strip()
@@ -212,7 +218,7 @@ def weather_panel(request):
         is_active = request.POST.get("is_active") == "on"
 
         if not headline:
-            ctx = _weather_context(latest, all_weather)
+            ctx = _weather_context(latest, all_weather, live)
             ctx["error"] = "Headline is required."
             return render(request, "manage/weather.html", ctx)
 
@@ -235,15 +241,30 @@ def weather_panel(request):
         w.save()
         return redirect("manage:weather")
 
-    ctx = _weather_context(latest, all_weather)
+    ctx = _weather_context(latest, all_weather, live)
     return render(request, "manage/weather.html", ctx)
 
 
-def _weather_context(latest, all_weather):
+def _weather_context(latest, all_weather, live=None):
     return {
         "weather": latest,
         "all_weather": all_weather,
+        "live_weather": live,
     }
+
+
+@staff_member_required
+def weather_delete(request, pk):
+    """Delete a weather update."""
+    w = get_object_or_404(WeatherInfo, pk=pk)
+    if request.method == "POST":
+        w.delete()
+        return redirect("manage:weather")
+    return render(request, "manage/confirm_delete.html", {
+        "object_type": "weather update",
+        "object_name": w.headline,
+        "cancel_url": "manage:weather",
+    })
 
 
 @staff_member_required
@@ -892,3 +913,98 @@ def comment_delete(request, pk):
         "obj": comment, "type_name": "Comment",
         "cancel_url": reverse("manage:moderation"),
     })
+
+
+@staff_member_required
+def topic_edit(request, pk=None):
+    """Create or edit a discussion topic (Seddit post)."""
+    topic = None
+    if pk:
+        topic = get_object_or_404(DiscussionTopic, pk=pk)
+
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        body = request.POST.get("body", "").strip()
+        category = request.POST.get("category", "general")
+        is_pinned = request.POST.get("is_pinned") == "on"
+        is_closed = request.POST.get("is_closed") == "on"
+
+        if not title or not body:
+            return render(request, "manage/topic_edit.html", {
+                "topic": topic,
+                "categories": DiscussionTopic.CATEGORY_CHOICES,
+                "error": "Title and body are required.",
+            })
+
+        if topic is None:
+            topic = DiscussionTopic(author=request.user)
+        topic.title = title
+        topic.body = body
+        topic.category = category
+        topic.is_pinned = is_pinned
+        topic.is_closed = is_closed
+        topic.save()
+        return redirect("manage:moderation")
+
+    return render(request, "manage/topic_edit.html", {
+        "topic": topic,
+        "categories": DiscussionTopic.CATEGORY_CHOICES,
+    })
+
+
+@staff_member_required
+def comment_edit(request, pk):
+    """Edit a comment body from moderation."""
+    comment = get_object_or_404(Comment, pk=pk)
+    if request.method == "POST":
+        body = request.POST.get("body", "").strip()
+        if not body:
+            return render(request, "manage/comment_edit.html", {
+                "comment": comment, "error": "Comment body is required.",
+            })
+        comment.body = body[:2000]
+        comment.save()
+        return redirect("manage:moderation")
+    return render(request, "manage/comment_edit.html", {"comment": comment})
+
+
+@staff_member_required
+def council_edit(request, pk=None):
+    """Create or edit a council agenda entry."""
+    agenda = None
+    if pk:
+        agenda = get_object_or_404(CouncilAgenda, pk=pk)
+
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        description = request.POST.get("description", "").strip()
+        meeting_date = request.POST.get("meeting_date", "").strip()
+        pdf_url = request.POST.get("pdf_url", "").strip()
+        is_approved = request.POST.get("is_approved") == "on"
+
+        if not title:
+            return render(request, "manage/council_edit.html", {
+                "agenda": agenda, "error": "Title is required.",
+            })
+
+        from django.utils.dateparse import parse_datetime
+        dt = parse_datetime(meeting_date) if meeting_date else None
+        if meeting_date and dt is None:
+            return render(request, "manage/council_edit.html", {
+                "agenda": agenda, "error": "Enter a valid meeting date (YYYY-MM-DD HH:MM).",
+            })
+
+        if agenda is None:
+            agenda = CouncilAgenda()
+        agenda.title = title
+        agenda.description = description
+        agenda.pdf_url = pdf_url
+        agenda.is_approved = is_approved
+        if dt:
+            if timezone.is_naive(dt):
+                dt = timezone.make_aware(dt)
+            agenda.meeting_date = dt
+        agenda.save()
+        return redirect("manage:council_list")
+
+    return render(request, "manage/council_edit.html", {"agenda": agenda})

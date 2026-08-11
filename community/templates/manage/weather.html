@@ -3,9 +3,38 @@
 
 {% block content %}
 <h1 class="page-title">Weather</h1>
-<p class="page-subtitle">Update the current weather that appears in the app</p>
+<p class="page-subtitle">Live conditions auto-update through the day — use the form for advisories &amp; fire risk</p>
 
 {% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<!-- Live Conditions (auto) -->
+{% if live_weather %}
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">
+    Live Conditions &mdash; California City
+    <a href="{% url 'manage:weather' %}?refresh=1" class="btn btn-sm btn-outline">&#8635; Refresh Now</a>
+  </div>
+  <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+    <div style="font-size:3rem;font-weight:700;color:var(--terra-dark);">{{ live_weather.emoji }} {{ live_weather.temp }}&deg;</div>
+    <div>
+      <strong style="font-size:1.1rem;">{{ live_weather.condition }}</strong>
+      <span style="color:var(--text-light);"> &mdash; feels like {{ live_weather.feels_like }}&deg;F</span><br>
+      <span style="color:var(--text-light);font-size:0.9rem;">
+        High {{ live_weather.high }}&deg;F / Low {{ live_weather.low }}&deg;F &middot;
+        Humidity {{ live_weather.humidity }}% &middot; Wind {{ live_weather.wind_mph }} mph<br>
+        Sunrise {{ live_weather.sunrise }} &middot; Sunset {{ live_weather.sunset }}
+        &middot; Updated {{ live_weather.updated|date:"g:i A" }}
+      </span>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">Live Conditions</div>
+  <div class="empty-state"><div class="empty-icon">&#9728;</div>
+    Live weather unavailable right now (offline or API timeout). The advisory form below still works.</div>
+</div>
+{% endif %}
 
 <!-- Current Weather Display -->
 {% if weather %}
@@ -96,7 +125,8 @@
         <td>{{ w.temperature_high }}&deg; / {{ w.temperature_low }}&deg;</td>
         <td>{% if w.is_active %}<span class="badge badge-success">Live</span>{% else %}<span class="badge badge-neutral">Past</span>{% endif %}</td>
         <td style="font-size:0.8rem;color:var(--text-light);">{{ w.created_at|date:"M j, g:i A" }}</td>
-        <td>{% if not w.is_active %}<a href="{% url 'manage:weather_activate' w.pk %}" class="btn btn-sm btn-outline">Reactivate</a>{% endif %}</td>
+        <td>{% if not w.is_active %}<a href="{% url 'manage:weather_activate' w.pk %}" class="btn btn-sm btn-outline">Reactivate</a>{% endif %}
+            <a href="{% url 'manage:weather_delete' w.pk %}" class="btn btn-sm btn-danger">Delete</a></td>
       </tr>
       {% endfor %}
       </tbody>

@@ -73,4 +73,14 @@ urlpatterns = [
     path("moderation/topics/<int:pk>/delete/", views.topic_delete, name="topic_delete"),
     path("moderation/comments/<int:pk>/toggle/", views.comment_toggle, name="comment_toggle"),
     path("moderation/comments/<int:pk>/delete/", views.comment_delete, name="comment_delete"),
+    path("weather/delete/<int:pk>/", views.weather_delete, name="weather_delete"),
+
+    # Council Agendas (manual add/edit)
+    path("council/new/", views.council_edit, name="council_edit"),
+    path("council/<int:pk>/edit/", views.council_edit, name="council_edit"),
+
+    # Topics / Comments (moderation edit)
+    path("moderation/topics/new/", views.topic_edit, name="topic_edit"),
+    path("moderation/topics/<int:pk>/edit/", views.topic_edit, name="topic_edit"),
+    path("moderation/comments/<int:pk>/edit/", views.comment_edit, name="comment_edit"),
 ]

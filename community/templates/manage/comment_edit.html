@@ -1,0 +1,25 @@
+{% extends "manage/base.html" %}
+{% block title %}Edit Comment — CalCity Manage{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{% url 'manage:moderation' %}" style="color:var(--text-light);text-decoration:none;font-size:1.2rem;">&larr;</a>
+  <h1 class="page-title" style="margin-bottom:0;">Edit Comment</h1>
+</div>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card">
+  <div style="font-size:0.85rem;color:var(--text-light);margin-bottom:12px;">
+    {{ comment.author.username }} &middot; {{ comment.created_at|date:"M j, g:i A" }}
+  </div>
+<form method="post">
+  {% csrf_token %}
+  <div class="form-group">
+    <label>Comment body <span style="color:var(--danger);">*</span></label>
+    <textarea name="body" rows="5" maxlength="2000">{{ comment.body }}</textarea>
+  </div>
+  <button type="submit" class="btn btn-primary" style="margin-top:12px;">Save Changes</button>
+</form>
+</div>
+{% endblock %}

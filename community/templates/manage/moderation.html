@@ -72,6 +72,7 @@
     </div>
     <div style="font-size:0.85rem; color:var(--text-light); margin:6px 0 10px;">{{ t.body|truncatechars:150 }}</div>
     <div class="btn-group">
+      <a href="{% url 'manage:topic_edit' t.pk %}" class="btn btn-sm btn-outline">Edit</a>
       <button class="btn btn-sm btn-outline" data-toggle="{% url 'manage:topic_toggle' t.pk 'pin' %}" data-label="pin">{% if t.is_pinned %}Unpin{% else %}Pin{% endif %}</button>
       <button class="btn btn-sm btn-outline" data-toggle="{% url 'manage:topic_toggle' t.pk 'close' %}" data-label="close">{% if t.is_closed %}Reopen{% else %}Lock{% endif %}</button>
       <a href="{% url 'manage:topic_delete' t.pk %}" class="btn btn-sm btn-danger">Delete</a>
@@ -97,7 +98,8 @@
     </div>
     <div style="font-size:0.88rem; margin:4px 0 8px;">{{ c.body|truncatechars:140 }}</div>
     <div class="btn-group">
-      <button class="btn btn-sm btn-outline" data-toggle="{% url 'manage:comment_toggle' c.pk %}">Hide</button>
+      <a href="{% url 'manage:comment_edit' c.pk %}" class="btn btn-sm btn-outline">Edit</a>
+      <button class="btn btn-sm btn-outline" data-toggle="{% url 'manage:comment_toggle' c.pk %}">{% if c.is_hidden %}Unhide{% else %}Hide{% endif %}</button>
       <a href="{% url 'manage:comment_delete' c.pk %}" class="btn btn-sm btn-danger">Delete</a>
     </div>
   </div>

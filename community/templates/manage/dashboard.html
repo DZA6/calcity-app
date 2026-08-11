@@ -7,48 +7,48 @@
 
 {% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
 
-<!-- Stats -->
+<!-- Stats (clickable — jump to the matching section) -->
 <div class="stats">
-  <div class="stat-card">
+  <a href="{% url 'manage:news_list' %}" class="stat-card stat-link">
     <div class="stat-num">{{ news_approved }}/{{ news_count }}</div>
-    <div class="stat-label">Approved Articles</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Approved Articles &rarr;</div>
+  </a>
+  <a href="{% url 'manage:alerts' %}" class="stat-card stat-link">
     <div class="stat-num">{{ active_alerts }}</div>
-    <div class="stat-label">Active Alerts</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Active Alerts &rarr;</div>
+  </a>
+  <a href="{% url 'manage:events_list' %}" class="stat-card stat-link">
     <div class="stat-num">{{ upcoming_events }}</div>
-    <div class="stat-label">Upcoming Events</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Upcoming Events &rarr;</div>
+  </a>
+  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
     <div class="stat-num">{{ pending_tips }}</div>
-    <div class="stat-label">Pending Tips</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Pending Tips &rarr;</div>
+  </a>
+  <a href="{% url 'manage:schools_list' %}" class="stat-card stat-link">
     <div class="stat-num">{{ school_count }}</div>
-    <div class="stat-label">Schools</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Schools &rarr;</div>
+  </a>
+  <a href="{% url 'manage:businesses_list' %}" class="stat-card stat-link">
     <div class="stat-num">{{ business_count }}</div>
-    <div class="stat-label">Businesses</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Businesses &rarr;</div>
+  </a>
+  <a href="{% url 'manage:deals_list' %}" class="stat-card stat-link">
     <div class="stat-num">{{ deal_count }}</div>
-    <div class="stat-label">Active Deals</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Active Deals &rarr;</div>
+  </a>
+  <a href="{% url 'manage:featured_list' %}" class="stat-card stat-link">
     <div class="stat-num">{{ featured_count }}</div>
-    <div class="stat-label">Featured</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Featured &rarr;</div>
+  </a>
+  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
     <div class="stat-num">{{ topic_count }}</div>
-    <div class="stat-label">Discussions</div>
-  </div>
-  <div class="stat-card">
+    <div class="stat-label">Discussions &rarr;</div>
+  </a>
+  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
     <div class="stat-num">{{ comment_count }}</div>
-    <div class="stat-label">Comments</div>
-  </div>
+    <div class="stat-label">Comments &rarr;</div>
+  </a>
 </div>
 
 <!-- Quick Actions -->
@@ -87,8 +87,34 @@
   </a>
 </div>
 
-<!-- Current Weather -->
-{% if latest_weather %}
+<!-- Live Weather (auto-updates through the day) -->
+{% if live_weather %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    Live Weather &mdash; California City
+    <a href="{% url 'manage:weather' %}?refresh=1" class="btn btn-sm btn-outline">&#8635; Refresh</a>
+    <a href="{% url 'manage:weather' %}" class="btn btn-sm btn-outline">Post Update</a>
+  </div>
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+    <div style="font-size: 2.5rem;">{{ live_weather.emoji }} {{ live_weather.temp }}&deg;</div>
+    <div>
+      <strong>{{ live_weather.condition }}</strong> (feels like {{ live_weather.feels_like }}&deg;)<br>
+      <span style="color: var(--text-light); font-size: 0.85rem;">
+        High {{ live_weather.high }}&deg; / Low {{ live_weather.low }}&deg; &middot;
+        Humidity {{ live_weather.humidity }}% &middot; Wind {{ live_weather.wind_mph }} mph<br>
+        Sunrise {{ live_weather.sunrise }} &middot; Sunset {{ live_weather.sunset }}
+        &middot; Updated {{ live_weather.updated|date:"g:i A" }}
+      </span>
+      {% if latest_weather %}
+      <div style="margin-top:8px; font-size:0.85rem; color:var(--terra-dark);">
+        &#128293; Advisory: <strong>{{ latest_weather.headline }}</strong>
+        {% if latest_weather.fire_risk %}&middot; Fire Risk: {{ latest_weather.fire_risk }}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% elif latest_weather %}
 <div class="card" style="margin-bottom: 24px;">
   <div class="card-header">
     Current Weather

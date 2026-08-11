@@ -1,0 +1,45 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if agenda %}Edit Agenda{% else %}New Agenda{% endif %} — CalCity Manage{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{% url 'manage:council_list' %}" style="color:var(--text-light);text-decoration:none;font-size:1.2rem;">&larr;</a>
+  <h1 class="page-title" style="margin-bottom:0;">{% if agenda %}Edit Agenda{% else %}New Agenda{% endif %}</h1>
+</div>
+
+{% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+<div class="card">
+<form method="post">
+  {% csrf_token %}
+
+  <div class="form-group">
+    <label>Title <span style="color:var(--danger);">*</span></label>
+    <input type="text" name="title" value="{{ agenda.title|default:'' }}" placeholder="e.g. City Council Regular Meeting" required maxlength="200">
+  </div>
+
+  <div class="form-group">
+    <label>Meeting Date &amp; Time</label>
+    <input type="text" name="meeting_date" value="{% if agenda.meeting_date %}{{ agenda.meeting_date|date:'Y-m-d H:i' }}{% endif %}" placeholder="2026-08-20 18:30">
+    <div style="font-size:0.8rem;color:var(--text-light);margin-top:4px;">Format: YYYY-MM-DD HH:MM (24-hour).</div>
+  </div>
+
+  <div class="form-group">
+    <label>Description</label>
+    <textarea name="description" rows="4" placeholder="Agenda summary or notes">{{ agenda.description|default:'' }}</textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Agenda PDF URL</label>
+    <input type="url" name="pdf_url" value="{{ agenda.pdf_url|default:'' }}" placeholder="https://www.californiacityca.gov/...">
+  </div>
+
+  <div class="checkbox-row">
+    <input type="checkbox" name="is_approved" id="id_approved" {% if agenda.is_approved %}checked{% endif %}>
+    <label for="id_approved">Approved — visible in the app</label>
+  </div>
+
+  <button type="submit" class="btn btn-primary" style="margin-top:12px;">{% if agenda %}Save Changes{% else %}Create Agenda{% endif %}</button>
+</form>
+</div>
+{% endblock %}

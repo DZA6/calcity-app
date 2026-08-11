@@ -4,6 +4,9 @@
 <div class="anim-in">
 <h1 class="page-title">Council Agendas</h1>
 <p class="page-subtitle">{{ total }} agendas on record</p>
+<div style="margin-bottom:16px;">
+  <a href="{% url 'manage:council_edit' %}" class="btn btn-primary">+ Add Agenda</a>
+</div>
 
 <div class="card anim-slide">
 {% if agendas %}
@@ -25,6 +28,7 @@
     <td>
       <div class="btn-group">
         {% if a.pdf_url %}<a href="{{ a.pdf_url }}" target="_blank" class="btn btn-sm btn-outline">PDF</a>{% endif %}
+        <a href="{% url 'manage:council_edit' a.pk %}" class="btn btn-sm btn-outline">Edit</a>
         <a href="{% url 'manage:council_delete' a.pk %}" class="btn btn-sm btn-danger">Delete</a>
       </div>
     </td>
