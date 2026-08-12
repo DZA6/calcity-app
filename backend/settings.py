@@ -158,7 +158,7 @@ AUTHENTICATION_BACKENDS = [
 AXES_FAILURE_LIMIT = 20
 AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_RESET_ON_SUCCESS = True
-AXES_LOCKOUT_PARAMETERS = ["username"]  # per-username, not per-IP (PA shares one IP)
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]  # both: per-user on PA's shared IP (effectively per-username)
 AXES_VERBOSE = False
 
 # ── DRF ────────────────────────────────────────────────────────────
