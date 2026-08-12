@@ -10,3 +10,4 @@ trafilatura>=2.0
 sentry-sdk>=2.0
 firebase-admin>=6.0
 pypdf>=5.0
+Pillow>=11.0
