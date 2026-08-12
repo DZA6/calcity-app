@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import 'contact_request_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -44,12 +45,20 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.format_size, size: 20),
                     const SizedBox(width: 8),
-                    Text('Font Size', style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface)),
+                    Text('Font Size',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, color: cs.onSurface)),
                     const Spacer(),
                     Text(
-                      settings.fontScale <= 0.95 ? 'Small'
-                          : settings.fontScale >= 1.25 ? 'Large' : 'Medium',
-                      style: TextStyle(fontSize: 12, color: cs.primary, fontWeight: FontWeight.w700),
+                      settings.fontScale <= 0.95
+                          ? 'Small'
+                          : settings.fontScale >= 1.25
+                              ? 'Large'
+                              : 'Medium',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: cs.primary,
+                          fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -88,13 +97,66 @@ class SettingsScreen extends StatelessWidget {
               style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
             ),
           ),
-          _sectionToggle(cs, Icons.article_outlined, 'News', settings.showNews, (v) => settings.setShowNews(v)),
-          _sectionToggle(cs, Icons.event_outlined, 'Events', settings.showEvents, (v) => settings.setShowEvents(v)),
-          _sectionToggle(cs, Icons.store_outlined, 'Businesses', settings.showBusinesses, (v) => settings.setShowBusinesses(v)),
-          _sectionToggle(cs, Icons.school_outlined, 'Schools', settings.showSchools, (v) => settings.setShowSchools(v)),
-          _sectionToggle(cs, Icons.person_outlined, 'Freelancers', settings.showFreelancers, (v) => settings.setShowFreelancers(v)),
-          _sectionToggle(cs, Icons.campaign_outlined, 'Alerts', settings.showAlerts, (v) => settings.setShowAlerts(v)),
-          _sectionToggle(cs, Icons.account_balance_outlined, 'City Council', settings.showCouncil, (v) => settings.setShowCouncil(v)),
+          _sectionToggle(cs, Icons.article_outlined, 'News', settings.showNews,
+              (v) => settings.setShowNews(v)),
+          _sectionToggle(cs, Icons.event_outlined, 'Events',
+              settings.showEvents, (v) => settings.setShowEvents(v)),
+          _sectionToggle(cs, Icons.store_outlined, 'Businesses',
+              settings.showBusinesses, (v) => settings.setShowBusinesses(v)),
+          _sectionToggle(cs, Icons.school_outlined, 'Schools',
+              settings.showSchools, (v) => settings.setShowSchools(v)),
+          _sectionToggle(cs, Icons.person_outlined, 'Freelancers',
+              settings.showFreelancers, (v) => settings.setShowFreelancers(v)),
+          _sectionToggle(cs, Icons.campaign_outlined, 'Alerts',
+              settings.showAlerts, (v) => settings.setShowAlerts(v)),
+          _sectionToggle(cs, Icons.account_balance_outlined, 'City Council',
+              settings.showCouncil, (v) => settings.setShowCouncil(v)),
+
+          const Divider(),
+
+          // ---- Help & Requests ----
+          _sectionHeader(cs, 'Help & Requests'),
+          ListTile(
+            leading: Icon(Icons.bug_report_outlined, color: cs.primary),
+            title: const Text('Report a Bug'),
+            subtitle: const Text('Something broken? Let us know'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openRequest(context, 'Report a Bug', 'bug',
+                'Describe the problem: what you were doing, what happened, and what you expected.'),
+          ),
+          ListTile(
+            leading: Icon(Icons.edit_note_outlined, color: cs.primary),
+            title: const Text('Request Info Removal / Update'),
+            subtitle: const Text('Correct or remove outdated information'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openRequest(
+                context,
+                'Info Removal / Update',
+                'info_update',
+                'Tell us what information should be removed or updated and why.'),
+          ),
+          ListTile(
+            leading: Icon(Icons.storefront_outlined, color: cs.primary),
+            title: const Text('Business Promotion'),
+            subtitle: const Text('Feature your business in the app'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openRequest(
+                context,
+                'Business Promotion',
+                'business_promo',
+                "Tell us about your business and what you'd like to promote. Include a name and phone or email."),
+          ),
+          ListTile(
+            leading: Icon(Icons.person_add_alt_outlined, color: cs.primary),
+            title: const Text('Freelancer Promotion'),
+            subtitle: const Text('Get listed as a freelancer'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openRequest(
+                context,
+                'Freelancer Promotion',
+                'freelancer_promo',
+                'Tell us about your services and how customers can reach you.'),
+          ),
 
           const Divider(),
 
@@ -128,9 +190,13 @@ class SettingsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Choose Theme Color',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Theme.of(ctx).colorScheme.onSurface)),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(ctx).colorScheme.onSurface)),
             const SizedBox(height: 4),
-            Text('The app updates instantly', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text('The app updates instantly',
+                style: const TextStyle(fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 20),
             Wrap(
               spacing: 16,
@@ -152,7 +218,9 @@ class SettingsScreen extends StatelessWidget {
                             color: entry.value,
                             shape: BoxShape.circle,
                             border: settings.accentColor == entry.key
-                                ? Border.all(color: Theme.of(ctx).colorScheme.onSurface, width: 3)
+                                ? Border.all(
+                                    color: Theme.of(ctx).colorScheme.onSurface,
+                                    width: 3)
                                 : null,
                           ),
                           child: settings.accentColor == entry.key
@@ -160,8 +228,9 @@ class SettingsScreen extends StatelessWidget {
                               : null,
                         ),
                         const SizedBox(height: 6),
-                        Text(entry.key[0].toUpperCase() + entry.key.substring(1),
-                          style: const TextStyle(fontSize: 11)),
+                        Text(
+                            entry.key[0].toUpperCase() + entry.key.substring(1),
+                            style: const TextStyle(fontSize: 11)),
                       ],
                     ),
                   ),
@@ -172,6 +241,16 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _openRequest(
+      BuildContext context, String title, String category, String hint) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ContactRequestScreen(
+              title: title, category: category, hint: hint),
+        ));
   }
 
   Widget _sectionHeader(ColorScheme cs, String title) {
@@ -189,10 +268,14 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionToggle(ColorScheme cs, IconData icon, String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _sectionToggle(ColorScheme cs, IconData icon, String label, bool value,
+      ValueChanged<bool> onChanged) {
     return SwitchListTile(
       title: Text(label, style: const TextStyle(fontSize: 14)),
-      secondary: Icon(icon, size: 22, color: value ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5)),
+      secondary: Icon(icon,
+          size: 22,
+          color:
+              value ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5)),
       value: value,
       onChanged: onChanged,
       dense: true,

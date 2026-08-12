@@ -114,6 +114,10 @@ class CommunityTip(models.Model):
         ("event", "Event"),
         ("business", "Business"),
         ("general", "General"),
+        ("bug", "Bug Report"),
+        ("info_update", "Info Removal/Update"),
+        ("business_promo", "Business Promotion"),
+        ("freelancer_promo", "Freelancer Promotion"),
     ]
 
     submitter_name = models.CharField(max_length=100, blank=True)
@@ -228,6 +232,38 @@ class School(models.Model):
     class Meta:
         verbose_name = "School"
         verbose_name_plural = "Schools"
+
+
+class Church(models.Model):
+    """A church / faith community in the California City area."""
+
+    name = models.CharField(max_length=200)
+    denomination = models.CharField(max_length=100, blank=True,
+                                    help_text="e.g. Catholic, Baptist, Foursquare")
+    description = models.TextField(blank=True)
+    address = models.CharField(max_length=300, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    website = models.URLField(blank=True)
+    service_times = models.TextField(blank=True,
+                                     help_text="Worship/service days and times")
+    events = models.TextField(blank=True,
+                              help_text="Recurring or upcoming events this church hosts")
+    food_giveaway = models.TextField(blank=True,
+                                     help_text="Food pantry / giveaway days and times")
+    image = models.ImageField(upload_to="churches/", blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
+    is_demo = models.BooleanField(default=False,
+                                  help_text="Fictional example — app shows a DEMO badge")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Church"
+        verbose_name_plural = "Churches"
+        ordering = ["name"]
 
 
 class FeaturedPlacement(models.Model):

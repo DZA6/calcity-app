@@ -3,16 +3,14 @@ import 'package:provider/provider.dart';
 import 'providers/content_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
-import 'services/api_service.dart';
 import 'services/push_service.dart';
-import 'models/content.dart';
+import 'services/reminder_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/businesses_screen.dart';
-import 'screens/freelancers_screen.dart';
 import 'screens/alerts_screen.dart';
-import 'screens/category_screen.dart';
 import 'screens/deals_screen.dart';
 import 'screens/conversations_screen.dart';
+import 'screens/explore_screen.dart';
 import 'screens/onboarding_screen.dart';
 
 void main() async {
@@ -22,6 +20,11 @@ void main() async {
     await PushService().initialize();
   } catch (_) {
     // Firebase/Play Services unavailable on this device
+  }
+  try {
+    await ReminderService.instance.init();
+  } catch (_) {
+    // Notifications unavailable on this device
   }
   runApp(const CalCityApp());
 }
@@ -45,13 +48,16 @@ class CalCityApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             builder: (context, child) {
               ErrorWidget.builder = (details) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text('Something went wrong.\nPull to refresh.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                ),
-              );
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text('Something went wrong.\nPull to refresh.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant)),
+                    ),
+                  );
               // Apply user font-size preference
               final media = MediaQuery.of(context);
               return MediaQuery(
@@ -65,7 +71,8 @@ class CalCityApp extends StatelessWidget {
             darkTheme: _buildDarkTheme(settings.accentColorValue),
             themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
             home: settings.initialized && !settings.onboarded
-                ? OnboardingScreen(onComplete: () => settings.setOnboarded(true))
+                ? OnboardingScreen(
+                    onComplete: () => settings.setOnboarded(true))
                 : const MainShell(),
           ),
         );
@@ -82,7 +89,8 @@ class CalCityApp extends StatelessWidget {
       primaryContainer: Color.lerp(accent, Colors.black, 0.65)!,
       onPrimaryContainer: Color.lerp(accent, Colors.white, 0.75)!,
       secondary: Color.lerp(accent, Colors.white, 0.25)!,
-      onSecondary: accent.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+      onSecondary:
+          accent.computeLuminance() > 0.5 ? Colors.black : Colors.white,
       secondaryContainer: Color.lerp(accent, Colors.black, 0.7)!,
       onSecondaryContainer: Color.lerp(accent, Colors.white, 0.7)!,
       tertiary: Color.lerp(accent, const Color(0xFF00E5FF), 0.5)!,
@@ -134,7 +142,8 @@ class CalCityApp extends StatelessWidget {
         height: 65,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStatePropertyAll(
-          TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface),
+          TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface),
         ),
         iconTheme: WidgetStatePropertyAll(
           IconThemeData(color: cs.onSurfaceVariant, size: 22),
@@ -160,7 +169,8 @@ class CalCityApp extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: cs.surfaceVariant.withValues(alpha: 0.3),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: const Color(0xFF1A1A1A),
@@ -232,7 +242,8 @@ class CalCityApp extends StatelessWidget {
         height: 65,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStatePropertyAll(
-          TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface),
+          TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface),
         ),
         iconTheme: WidgetStatePropertyAll(
           IconThemeData(color: cs.onSurfaceVariant, size: 22),
@@ -248,14 +259,16 @@ class CalCityApp extends StatelessWidget {
         backgroundColor: cs.surfaceVariant.withValues(alpha: 0.5),
       ),
       dividerTheme: DividerThemeData(
-        thickness: 0.5, space: 0,
+        thickness: 0.5,
+        space: 0,
         color: cs.outline.withValues(alpha: 0.3),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: cs.surfaceVariant.withValues(alpha: 0.3),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: const Color(0xFFFAFAFA),
@@ -291,13 +304,20 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildScreen(int index) {
     switch (index) {
-      case 0: return const HomeScreen();
-      case 1: return const ExploreScreen();
-      case 2: return const BusinessesScreen();
-      case 3: return const AlertsScreen();
-      case 4: return const DealsScreen();
-      case 5: return const ConversationsScreen();
-      default: return const HomeScreen();
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const ExploreScreen();
+      case 2:
+        return const BusinessesScreen();
+      case 3:
+        return const AlertsScreen();
+      case 4:
+        return const DealsScreen();
+      case 5:
+        return const ConversationsScreen();
+      default:
+        return const HomeScreen();
     }
   }
 
@@ -318,263 +338,41 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: _buildTab(_selectedIndex),
       bottomNavigationBar: NavigationBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onDestinationSelected,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.explore_outlined),
-                selectedIcon: Icon(Icons.explore),
-                label: 'Explore',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.store_outlined),
-                selectedIcon: Icon(Icons.store),
-                label: 'Businesses',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.campaign_outlined),
-                selectedIcon: Icon(Icons.campaign),
-                label: 'Alerts',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.local_offer_outlined),
-                selectedIcon: Icon(Icons.local_offer),
-                label: 'Deals',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.forum_outlined),
-                selectedIcon: Icon(Icons.forum),
-                label: 'Community',
-              ),
-            ],
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onDestinationSelected,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
           ),
-    );
-  }
-}
-
-/// Explore screen — category grid + event calendar
-class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({super.key});
-  @override
-  State<ExploreScreen> createState() => _ExploreScreenState();
-}
-
-class _ExploreScreenState extends State<ExploreScreen> {
-  List<EventItem> _events = [];
-  bool _loaded = false;
-
-  static const _categories = <Map<String, dynamic>>[
-    {'slug': 'city_works', 'label': 'City Works', 'icon': Icons.engineering_outlined, 'color': Color(0xFF5F6B41)},
-    {'slug': 'church', 'label': 'Church/Faith', 'icon': Icons.church_outlined, 'color': Color(0xFF8B5A3C)},
-    {'slug': 'recreation', 'label': 'Recreation', 'icon': Icons.park_outlined, 'color': Color(0xFF4A7C59)},
-    {'slug': 'law_enforcement', 'label': 'Law Enforcement', 'icon': Icons.local_police_outlined, 'color': Color(0xFF3A4B6D)},
-    {'slug': 'health', 'label': 'Health', 'icon': Icons.health_and_safety_outlined, 'color': Color(0xFF4D8C7A)},
-    {'slug': 'education', 'label': 'Education', 'icon': Icons.school_outlined, 'color': Color(0xFF6B5B95)},
-    {'slug': 'business', 'label': 'Business', 'icon': Icons.store_outlined, 'color': Color(0xFFB8573E)},
-    {'slug': 'traffic', 'label': 'Traffic', 'icon': Icons.traffic_outlined, 'color': Color(0xFF8B6B3A)},
-    {'slug': 'community', 'label': 'Community', 'icon': Icons.celebration_outlined, 'color': Color(0xFF9B5E3A)},
-    {'slug': 'lost_pets', 'label': 'Lost Pets', 'icon': Icons.pets_outlined, 'color': Color(0xFF7A4E8C)},
-    {'slug': 'gigs', 'label': 'Gigs & Services', 'icon': Icons.handyman_outlined, 'color': Color(0xFF3E6B8C)},
-    {'slug': 'neighbor', 'label': 'Neighbor Love', 'icon': Icons.favorite_outline, 'color': Color(0xFFC0455A)},
-  ];
-
-  static final _categoryColors = <String, Color>{
-    'community': const Color(0xFF5B9BD5),
-    'school': const Color(0xFFE8A838),
-    'sports': const Color(0xFF28A745),
-    'city': const Color(0xFFC67B5C),
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    _loadEvents();
-  }
-
-  Future<void> _loadEvents() async {
-    final events = await ApiService().fetchEvents();
-    if (mounted) setState(() { _events = events; _loaded = true; });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: Image.asset('assets/images/calcity_logo.png', height: 36),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Category grid
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: _categories.length + 1,
-              itemBuilder: (ctx, i) {
-                // Last item = Freelancers button
-                if (i == _categories.length) {
-                  return GestureDetector(
-                    onTap: () => Navigator.push(ctx, MaterialPageRoute(
-                      builder: (_) => const FreelancersScreen(),
-                    )),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: cs.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 44, height: 44,
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.person_outline, color: Colors.blue, size: 22),
-                          ),
-                          const SizedBox(height: 10),
-                          Text('Freelancers', textAlign: TextAlign.center, style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w500, color: cs.onSurface, height: 1.2,
-                          ), maxLines: 2, overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                final cat = _categories[i];
-                final color = cat['color'] as Color;
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(ctx, MaterialPageRoute(
-                      builder: (_) => CategoryScreen(
-                        category: cat['slug'] as String,
-                        title: cat['label'] as String,
-                      ),
-                    ));
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: cs.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 44, height: 44,
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(cat['icon'] as IconData, color: color, size: 22),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(cat['label'] as String, textAlign: TextAlign.center, style: TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w500, color: cs.onSurface, height: 1.2,
-                        ), maxLines: 2, overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Event Calendar
-            if (_loaded && _events.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(children: [
-                  const Icon(Icons.calendar_month, size: 20),
-                  const SizedBox(width: 8),
-                  Text('Events', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
-                  const Spacer(),
-                  Text('${_events.length} upcoming', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
-                ]),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 100,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _events.length,
-                  itemBuilder: (ctx, i) {
-                    final event = _events[i];
-                    final catColor = _categoryColors[event.category] ?? cs.primary;
-                    return Container(
-                      width: 80,
-                      margin: const EdgeInsets.only(right: 10),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 56, height: 56,
-                            decoration: BoxDecoration(
-                              color: cs.surface,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  event.startDate != null
-                                      ? '${event.startDate!.day}'
-                                      : '?',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface),
-                                ),
-                                Text(
-                                  event.startDate != null
-                                      ? _monthAbbr(event.startDate!.month)
-                                      : '',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: cs.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          // Color-coded dot
-                          Container(
-                            width: 8, height: 8,
-                            decoration: BoxDecoration(
-                              color: catColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ],
-        ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.store_outlined),
+            selectedIcon: Icon(Icons.store),
+            label: 'Businesses',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.campaign_outlined),
+            selectedIcon: Icon(Icons.campaign),
+            label: 'Alerts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.local_offer_outlined),
+            selectedIcon: Icon(Icons.local_offer),
+            label: 'Deals',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.forum_outlined),
+            selectedIcon: Icon(Icons.forum),
+            label: 'Community',
+          ),
+        ],
       ),
     );
-  }
-
-  String _monthAbbr(int month) {
-    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[month];
   }
 }

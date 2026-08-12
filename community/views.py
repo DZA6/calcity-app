@@ -12,6 +12,7 @@ from django_ratelimit.decorators import ratelimit
 from .models import (
     Alert,
     Business,
+    Church,
     Comment,
     CommunityTip,
     CouncilAgenda,
@@ -27,6 +28,7 @@ from .models import (
 from .serializers import (
     AlertSerializer,
     BusinessSerializer,
+    ChurchSerializer,
     CommentSerializer,
     CommunityTipSerializer,
     CouncilAgendaSerializer,
@@ -103,6 +105,15 @@ class CouncilAgendaViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CouncilAgendaSerializer
     pagination_class = None
     ordering = ["-meeting_date"]
+
+
+class ChurchViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public API — only returns approved churches, alphabetical by name."""
+
+    queryset = Church.objects.filter(is_approved=True)
+    serializer_class = ChurchSerializer
+    pagination_class = None
+    ordering = ["name"]
 
 
 class CategoryNewsViewSet(viewsets.ReadOnlyModelViewSet):

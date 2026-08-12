@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/content.dart';
 import '../providers/content_provider.dart';
+import 'school_detail_screen.dart';
 
 class SchoolsScreen extends StatefulWidget {
   const SchoolsScreen({super.key});
@@ -29,13 +30,19 @@ class _SchoolsScreenState extends State<SchoolsScreen> {
 
   IconData _typeIcon(String? type) {
     switch (type?.toLowerCase()) {
-      case 'elementary': return Icons.child_care;
-      case 'middle': return Icons.school;
-      case 'high': return Icons.architecture;
+      case 'elementary':
+        return Icons.child_care;
+      case 'middle':
+        return Icons.school;
+      case 'high':
+        return Icons.architecture;
       case 'college':
-      case 'university': return Icons.account_balance;
-      case 'charter': return Icons.stars;
-      default: return Icons.school_outlined;
+      case 'university':
+        return Icons.account_balance;
+      case 'charter':
+        return Icons.stars;
+      default:
+        return Icons.school_outlined;
     }
   }
 
@@ -57,7 +64,8 @@ class _SchoolsScreenState extends State<SchoolsScreen> {
                   Icon(Icons.school_outlined, size: 48, color: cs.outline),
                   const SizedBox(height: 12),
                   Text('No schools listed yet',
-                    style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant)),
+                      style:
+                          TextStyle(fontSize: 15, color: cs.onSurfaceVariant)),
                 ],
               ),
             );
@@ -91,79 +99,114 @@ class _SchoolsScreenState extends State<SchoolsScreen> {
                 final s = schools[i - 1];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: cs.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => SchoolDetailScreen(school: s)),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 44, height: 44,
-                                decoration: BoxDecoration(
-                                  color: cs.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(_typeIcon(s.type), color: cs.primary, size: 22),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(s.name,
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
-                                    if (s.type != null)
-                                      Text(s.type!,
-                                        style: TextStyle(fontSize: 13, color: cs.primary, fontWeight: FontWeight.w500)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (s.description != null && s.description!.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Text(s.description!,
-                              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, height: 1.3),
-                              maxLines: 3, overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          if (s.address != null || s.phone != null || s.website != null ||
-                              s.calendarUrl != null || s.bellScheduleUrl != null) ...[
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: cs.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: cs.outline.withValues(alpha: 0.4)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                if (s.address != null)
-                                  _infoChip(cs, Icons.location_on_outlined, s.address!),
-                                if (s.phone != null)
-                                  _infoChip(cs, Icons.phone_outlined, s.phone!),
-                                if (s.website != null)
-                                  GestureDetector(
-                                    onTap: () => _launch(s.website!),
-                                    child: _infoChip(cs, Icons.open_in_new, 'Website'),
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: cs.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                if (s.calendarUrl != null)
-                                  GestureDetector(
-                                    onTap: () => _launch(s.calendarUrl!),
-                                    child: _infoChip(cs, Icons.calendar_month_outlined, 'Calendar'),
+                                  child: Icon(_typeIcon(s.type),
+                                      color: cs.primary, size: 22),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(s.name,
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: cs.onSurface)),
+                                      if (s.type != null)
+                                        Text(s.type!,
+                                            style: TextStyle(
+                                                fontSize: 13,
+                                                color: cs.primary,
+                                                fontWeight: FontWeight.w500)),
+                                    ],
                                   ),
-                                if (s.bellScheduleUrl != null)
-                                  GestureDetector(
-                                    onTap: () => _launch(s.bellScheduleUrl!),
-                                    child: _infoChip(cs, Icons.schedule_outlined, 'Bell Schedule'),
-                                  ),
+                                ),
                               ],
                             ),
+                            if (s.description != null &&
+                                s.description!.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                s.description!,
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: cs.onSurfaceVariant,
+                                    height: 1.3),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            if (s.address != null ||
+                                s.phone != null ||
+                                s.website != null ||
+                                s.calendarUrl != null ||
+                                s.bellScheduleUrl != null) ...[
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: [
+                                  if (s.address != null)
+                                    _infoChip(cs, Icons.location_on_outlined,
+                                        s.address!),
+                                  if (s.phone != null)
+                                    _infoChip(
+                                        cs, Icons.phone_outlined, s.phone!),
+                                  if (s.website != null)
+                                    GestureDetector(
+                                      onTap: () => _launch(s.website!),
+                                      child: _infoChip(
+                                          cs, Icons.open_in_new, 'Website'),
+                                    ),
+                                  if (s.calendarUrl != null)
+                                    GestureDetector(
+                                      onTap: () => _launch(s.calendarUrl!),
+                                      child: _infoChip(
+                                          cs,
+                                          Icons.calendar_month_outlined,
+                                          'Calendar'),
+                                    ),
+                                  if (s.bellScheduleUrl != null)
+                                    GestureDetector(
+                                      onTap: () => _launch(s.bellScheduleUrl!),
+                                      child: _infoChip(
+                                          cs,
+                                          Icons.schedule_outlined,
+                                          'Bell Schedule'),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -186,10 +229,14 @@ class _SchoolsScreenState extends State<SchoolsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+          Icon(icon,
+              size: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
           const SizedBox(width: 4),
-          Text(text,
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+          Text(
+            text,
+            style: TextStyle(
+                fontSize: 11,
+                color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
           ),
         ],
       ),

@@ -11,6 +11,7 @@ class ContentProvider extends ChangeNotifier {
   List<AlertItem> _alerts = [];
   List<CouncilAgendaItem> _councilAgendas = [];
   List<SchoolItem> _schools = [];
+  List<ChurchItem> _churches = [];
   WeatherInfo? _weather;
   bool _isLoading = false;
   bool _isInitialized = false;
@@ -25,6 +26,7 @@ class ContentProvider extends ChangeNotifier {
   List<AlertItem> get alerts => _alerts;
   List<CouncilAgendaItem> get councilAgendas => _councilAgendas;
   List<SchoolItem> get schools => _schools;
+  List<ChurchItem> get churches => _churches;
   WeatherInfo? get weather => _weather;
   bool get isLoading => _isLoading;
   bool get isLoadingAlerts => _isLoadingAlerts;
@@ -75,6 +77,7 @@ class ContentProvider extends ChangeNotifier {
         _api.fetchCouncilAgendas(),
         _api.fetchWeather(),
         _api.fetchSchools(),
+        _api.fetchChurches(),
         _api.fetchFeatured(),
         _api.fetchDeals(),
       ]);
@@ -83,11 +86,13 @@ class ContentProvider extends ChangeNotifier {
       _events = (results[1] as List<EventItem>?) ?? _events;
       _businesses = (results[2] as List<BusinessItem>?) ?? _businesses;
       _alerts = (results[3] as List<AlertItem>?) ?? _alerts;
-      _councilAgendas = (results[4] as List<CouncilAgendaItem>?) ?? _councilAgendas;
+      _councilAgendas =
+          (results[4] as List<CouncilAgendaItem>?) ?? _councilAgendas;
       if (results[5] is WeatherInfo) _weather = results[5] as WeatherInfo?;
       _schools = (results[6] as List<SchoolItem>?) ?? _schools;
-      _featured = (results[7] as List<dynamic>?) ?? [];
-      _deals = (results[8] as List<dynamic>?) ?? [];
+      _churches = (results[7] as List<ChurchItem>?) ?? _churches;
+      _featured = (results[8] as List<dynamic>?) ?? [];
+      _deals = (results[9] as List<dynamic>?) ?? [];
     } catch (e) {
       _error = 'Could not load content. Pull to retry.';
       debugPrint('refreshAll error: $e');
@@ -114,17 +119,25 @@ class ContentProvider extends ChangeNotifier {
   }
 
   Future<void> refreshNews() async {
-    try { _news = await _api.fetchNews(); _rebuildCaches(); } catch (_) {}
+    try {
+      _news = await _api.fetchNews();
+      _rebuildCaches();
+    } catch (_) {}
     notifyListeners();
   }
 
   Future<void> refreshEvents() async {
-    try { _events = await _api.fetchEvents(); } catch (_) {}
+    try {
+      _events = await _api.fetchEvents();
+    } catch (_) {}
     notifyListeners();
   }
 
   Future<void> refreshBusinesses() async {
-    try { _businesses = await _api.fetchBusinesses(); _rebuildCaches(); } catch (_) {}
+    try {
+      _businesses = await _api.fetchBusinesses();
+      _rebuildCaches();
+    } catch (_) {}
     notifyListeners();
   }
 

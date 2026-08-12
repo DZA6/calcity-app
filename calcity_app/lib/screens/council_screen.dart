@@ -13,6 +13,8 @@ class CouncilScreen extends StatefulWidget {
 }
 
 class _CouncilScreenState extends State<CouncilScreen> {
+  int? _selectedYear; // null = all years
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +28,47 @@ class _CouncilScreenState extends State<CouncilScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  /// The council "agenda" field is populated by the Granicus scraper with a
+  /// video player URL (not a PDF). Detect video/media URLs so we can label
+  /// the action correctly.
+  bool _isVideoUrl(String url) {
+    final u = url.toLowerCase();
+    return u.contains('granicus.com') ||
+        u.contains('mediaplayer') ||
+        u.contains('youtube.com') ||
+        u.contains('youtu.be') ||
+        u.contains('vimeo.com') ||
+        u.endsWith('.mp4') ||
+        u.endsWith('.m3u8');
+  }
+
+  Widget _yearFilter(BuildContext context, ThemeData theme, List<int> years) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _yearChip(theme, null, 'All'),
+            for (final y in years) _yearChip(theme, y, '$y'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _yearChip(ThemeData theme, int? year, String label) {
+    final selected = _selectedYear == year;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => setState(() => _selectedYear = year),
+      ),
+    );
   }
 
   @override
@@ -97,13 +140,30 @@ class _CouncilScreenState extends State<CouncilScreen> {
               return a.meetingDate!.compareTo(b.meetingDate!);
             });
 
+          // Distinct years for the filter (newest first)
+          final years = sorted
+              .where((a) => a.meetingDate != null)
+              .map((a) => a.meetingDate!.year)
+              .toSet()
+              .toList()
+            ..sort((a, b) => b.compareTo(a));
+
+          final filtered = _selectedYear == null
+              ? sorted
+              : sorted
+                  .where((a) => a.meetingDate?.year == _selectedYear)
+                  .toList();
+
           return RefreshIndicator(
             onRefresh: () => provider.fetchCouncilAgendas(),
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: sorted.length,
+              itemCount: filtered.length + 1,
               itemBuilder: (context, index) {
-                final item = sorted[index];
+                if (index == 0) {
+                  return _yearFilter(context, theme, years);
+                }
+                final item = filtered[index - 1];
                 final dateStr = item.meetingDate != null
                     ? DateFormat('EEEE, MMMM d, yyyy').format(item.meetingDate!)
                     : 'Date TBD';
@@ -112,7 +172,8 @@ class _CouncilScreenState extends State<CouncilScreen> {
                     : null;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -124,7 +185,8 @@ class _CouncilScreenState extends State<CouncilScreen> {
                         children: [
                           // Meeting date badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.primaryContainer
                                   .withValues(alpha: 0.5),
@@ -195,8 +257,17 @@ class _CouncilScreenState extends State<CouncilScreen> {
                               alignment: Alignment.centerLeft,
                               child: OutlinedButton.icon(
                                 onPressed: () => _launchUrl(item.pdfUrl!),
-                                icon: const Icon(Icons.picture_as_pdf, size: 18),
-                                label: const Text('View Agenda'),
+                                icon: Icon(
+                                  _isVideoUrl(item.pdfUrl!)
+                                      ? Icons.play_circle_outline
+                                      : Icons.picture_as_pdf,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  _isVideoUrl(item.pdfUrl!)
+                                      ? 'Watch Meeting'
+                                      : 'View Agenda',
+                                ),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: theme.colorScheme.primary,
                                   side: BorderSide(

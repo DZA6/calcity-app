@@ -18,7 +18,7 @@ class SettingsProvider extends ChangeNotifier {
 
   // Available accent colors — user picks the app's theme color
   static const accentColors = <String, Color>{
-    'neon': Color(0xFF00FF41),
+    'emerald': Color(0xFF2E7D32),
     'terracotta': Color(0xFFC67B5C),
     'ocean': Color(0xFF4A90D9),
     'royal': Color(0xFF6B5B95),
@@ -40,7 +40,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _initialized = false;
   bool _onboarded = false;
   double _fontScale = 1.0;
-  String _accentColor = 'neon';
+  String _accentColor = 'emerald';
 
   bool get darkMode => _darkMode;
   bool get notifications => _notifications;
@@ -55,7 +55,8 @@ class SettingsProvider extends ChangeNotifier {
   bool get onboarded => _onboarded;
   double get fontScale => _fontScale;
   String get accentColor => _accentColor;
-  Color get accentColorValue => accentColors[_accentColor] ?? accentColors['neon']!;
+  Color get accentColorValue =>
+      accentColors[_accentColor] ?? accentColors['emerald']!;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -70,7 +71,9 @@ class SettingsProvider extends ChangeNotifier {
     _showCouncil = prefs.getBool(_keyShowCouncil) ?? true;
     _onboarded = prefs.getBool(_keyOnboarded) ?? false;
     _fontScale = prefs.getDouble(_keyFontScale) ?? 1.0;
-    _accentColor = prefs.getString(_keyAccentColor) ?? 'neon';
+    _accentColor = prefs.getString(_keyAccentColor) ?? 'emerald';
+    if (_accentColor == 'neon')
+      _accentColor = 'emerald'; // migrate legacy neon -> emerald
     _initialized = true;
     notifyListeners();
   }

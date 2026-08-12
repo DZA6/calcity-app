@@ -36,7 +36,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
@@ -81,27 +82,57 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     }
   }
 
-  void _push(Widget screen) =>
-      Navigator.push(context, AppPageRoute(screen));
+  void _push(Widget screen) => Navigator.push(context, AppPageRoute(screen));
 
   Widget _shimmerLoading() {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade900,
       highlightColor: Colors.grey.shade700,
-      child: ListView(padding: const EdgeInsets.all(16), children: List.generate(6, (i) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 120, height: 80, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(height: 14, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-            const SizedBox(height: 8),
-            Container(height: 14, width: 200, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-            const SizedBox(height: 8),
-            Container(height: 10, width: 100, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-          ])),
-        ]),
-      ))),
+      child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: List.generate(
+              6,
+              (i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                              width: 120,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12))),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Container(
+                                    height: 14,
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius:
+                                            BorderRadius.circular(4))),
+                                const SizedBox(height: 8),
+                                Container(
+                                    height: 14,
+                                    width: 200,
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius:
+                                            BorderRadius.circular(4))),
+                                const SizedBox(height: 8),
+                                Container(
+                                    height: 10,
+                                    width: 100,
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius:
+                                            BorderRadius.circular(4))),
+                              ])),
+                        ]),
+                  ))),
     );
   }
 
@@ -120,7 +151,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
           }
           return RefreshIndicator(
             onRefresh: () async {
-              await Future.wait([prov.refreshAll(), _loadWeather(), _loadTopics()]);
+              await Future.wait(
+                  [prov.refreshAll(), _loadWeather(), _loadTopics()]);
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 40),
@@ -132,7 +164,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  List<Widget> _buildFeed(BuildContext context, ContentProvider prov, SettingsProvider settings) {
+  List<Widget> _buildFeed(
+      BuildContext context, ContentProvider prov, SettingsProvider settings) {
     final cs = Theme.of(context).colorScheme;
     final items = <Widget>[];
 
@@ -173,7 +206,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               minimumSize: const Size(0, 32),
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              textStyle:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
             child: const Text('See all'),
           ),
@@ -258,7 +292,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
           const Spacer(),
           TextButton(
             onPressed: () => _push(const SchoolsScreen()),
-            child: Text('See all', style: TextStyle(fontSize: 12, color: cs.primary)),
+            child: Text('See all',
+                style: TextStyle(fontSize: 12, color: cs.primary)),
           ),
         ],
       ));
@@ -291,13 +326,18 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: cs.outline.withValues(alpha: 0.4)),
+            Icon(Icons.inbox_outlined,
+                size: 48, color: cs.outline.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text('No content to show',
-              style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant.withValues(alpha: 0.5))),
+                style: TextStyle(
+                    fontSize: 15,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.5))),
             const SizedBox(height: 4),
             Text('Enable sections in Settings',
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant.withValues(alpha: 0.3))),
+                style: TextStyle(
+                    fontSize: 13,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.3))),
           ],
         ),
       ));
@@ -352,18 +392,25 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: cs.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.location_city, color: cs.primary, size: 24),
+                    child:
+                        Icon(Icons.location_city, color: cs.primary, size: 24),
                   ),
                   const SizedBox(height: 14),
-                  Text('CalCity', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  Text('CalCity',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface)),
                   const SizedBox(height: 2),
                   Text('California City Community',
-                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                      style:
+                          TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -384,16 +431,34 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Text('SECTIONS',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary, letterSpacing: 0.5)),
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: cs.primary,
+                      letterSpacing: 0.5)),
             ),
 
-            _drawerToggle(cs, Icons.article_outlined, 'News', settings.showNews, (v) => settings.setShowNews(v), color: const Color(0xFF00FF41)),
-            _drawerToggle(cs, Icons.event_outlined, 'Events', settings.showEvents, (v) => settings.setShowEvents(v), color: const Color(0xFF00E5FF)),
-            _drawerToggle(cs, Icons.store_outlined, 'Businesses', settings.showBusinesses, (v) => settings.setShowBusinesses(v), color: const Color(0xFFFFB300)),
-            _drawerToggle(cs, Icons.school_outlined, 'Schools', settings.showSchools, (v) => settings.setShowSchools(v), color: const Color(0xFFFF5252)),
-            _drawerToggle(cs, Icons.person_outlined, 'Freelancers', settings.showFreelancers, (v) => settings.setShowFreelancers(v), color: const Color(0xFFE040FB)),
-            _drawerToggle(cs, Icons.campaign_outlined, 'Alerts', settings.showAlerts, (v) => settings.setShowAlerts(v), color: const Color(0xFFFF6D00)),
-            _drawerToggle(cs, Icons.account_balance_outlined, 'City Council', settings.showCouncil, (v) => settings.setShowCouncil(v), color: const Color(0xFF76FF03)),
+            _drawerToggle(cs, Icons.article_outlined, 'News', settings.showNews,
+                (v) => settings.setShowNews(v),
+                color: const Color(0xFF2E7D32)),
+            _drawerToggle(cs, Icons.event_outlined, 'Events',
+                settings.showEvents, (v) => settings.setShowEvents(v),
+                color: const Color(0xFF00E5FF)),
+            _drawerToggle(cs, Icons.store_outlined, 'Businesses',
+                settings.showBusinesses, (v) => settings.setShowBusinesses(v),
+                color: const Color(0xFFFFB300)),
+            _drawerToggle(cs, Icons.school_outlined, 'Schools',
+                settings.showSchools, (v) => settings.setShowSchools(v),
+                color: const Color(0xFFFF5252)),
+            _drawerToggle(cs, Icons.person_outlined, 'Freelancers',
+                settings.showFreelancers, (v) => settings.setShowFreelancers(v),
+                color: const Color(0xFFE040FB)),
+            _drawerToggle(cs, Icons.campaign_outlined, 'Alerts',
+                settings.showAlerts, (v) => settings.setShowAlerts(v),
+                color: const Color(0xFFFF6D00)),
+            _drawerToggle(cs, Icons.account_balance_outlined, 'City Council',
+                settings.showCouncil, (v) => settings.setShowCouncil(v),
+                color: const Color(0xFF5F6B41)),
 
             // Sign In / Sign Up / Profile
             Consumer<AuthProvider>(
@@ -405,31 +470,51 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                       backgroundColor: cs.primaryContainer,
                       child: Text(
                         (auth.username ?? 'U')[0].toUpperCase(),
-                        style: TextStyle(color: cs.onPrimaryContainer, fontWeight: FontWeight.w600, fontSize: 13),
+                        style: TextStyle(
+                            color: cs.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13),
                       ),
                     ),
-                    title: Text(auth.username ?? 'User', style: const TextStyle(fontSize: 14)),
-                    subtitle: Text(auth.email ?? '', style: const TextStyle(fontSize: 12)),
+                    title: Text(auth.username ?? 'User',
+                        style: const TextStyle(fontSize: 14)),
+                    subtitle: Text(auth.email ?? '',
+                        style: const TextStyle(fontSize: 12)),
                     trailing: TextButton(
-                      onPressed: () { auth.logout(); },
+                      onPressed: () {
+                        auth.logout();
+                      },
                       child: const Text('Sign Out'),
                     ),
                   );
                 }
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen())); },
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const SignupScreen()));
+                          },
                           child: const Text('Sign Up'),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())); },
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const LoginScreen()));
+                          },
                           child: const Text('Sign In'),
                         ),
                       ),
@@ -458,7 +543,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               child: Text(
                 'California City, CA 93505',
-                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                style: TextStyle(
+                    fontSize: 11,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
               ),
             ),
           ],
@@ -467,11 +554,16 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  Widget _drawerToggle(ColorScheme cs, IconData icon, String label, bool value, ValueChanged<bool> onChanged, {Color? color}) {
+  Widget _drawerToggle(ColorScheme cs, IconData icon, String label, bool value,
+      ValueChanged<bool> onChanged,
+      {Color? color}) {
     final iconColor = color ?? cs.primary;
     return SwitchListTile(
       title: Text(label, style: const TextStyle(fontSize: 14)),
-      secondary: Icon(icon, size: 20, color: value ? iconColor : cs.onSurfaceVariant.withValues(alpha: 0.5)),
+      secondary: Icon(icon,
+          size: 20,
+          color:
+              value ? iconColor : cs.onSurfaceVariant.withValues(alpha: 0.5)),
       value: value,
       onChanged: onChanged,
       dense: true,
@@ -493,7 +585,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   // ---- Live weather hero (falls back to the static image hero offline) ----
-  Widget _weatherHero(BuildContext context, ColorScheme cs, LiveWeather? w, WeatherInfo? advisory) {
+  Widget _weatherHero(BuildContext context, ColorScheme cs, LiveWeather? w,
+      WeatherInfo? advisory) {
     if (w == null) return _staticHero(context);
 
     final gradient = _skyGradient(w);
@@ -521,7 +614,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
           Positioned(
             right: -18,
             top: -22,
-            child: Icon(w.icon, size: 150, color: Colors.white.withValues(alpha: 0.14)),
+            child: Icon(w.icon,
+                size: 150, color: Colors.white.withValues(alpha: 0.14)),
           ),
           // Text layer — always readable on the gradient
           Padding(
@@ -532,24 +626,39 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 // Location + date row
                 Row(
                   children: [
-                    const Icon(Icons.location_on_rounded, size: 15, color: Colors.white70),
+                    const Icon(Icons.location_on_rounded,
+                        size: 15, color: Colors.white70),
                     const SizedBox(width: 3),
                     Text('California City',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.95))),
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.95))),
                     const Spacer(),
                     Text(DateFormat('EEEE, MMM d').format(DateTime.now()),
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.85))),
-                    if (advisory != null && advisory.fireRisk != null && advisory.fireRisk!.isNotEmpty) ...[
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.85))),
+                    if (advisory != null &&
+                        advisory.fireRisk != null &&
+                        advisory.fireRisk!.isNotEmpty) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: _fireRiskColor(advisory.fireRisk!).withValues(alpha: 0.25),
+                          color: _fireRiskColor(advisory.fireRisk!)
+                              .withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: Text('🔥 ${advisory.fireRisk!}',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white)),
                       ),
                     ],
                   ],
@@ -560,7 +669,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text('${w.temp}°',
-                        style: const TextStyle(fontSize: 62, fontWeight: FontWeight.w800, color: Colors.white, height: 0.95, letterSpacing: -2)),
+                        style: const TextStyle(
+                            fontSize: 62,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 0.95,
+                            letterSpacing: -2)),
                     const SizedBox(width: 10),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -568,9 +682,14 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(w.condition,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
                           Text('Feels like ${w.feelsLike}°',
-                              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.85))),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.85))),
                         ],
                       ),
                     ),
@@ -581,20 +700,31 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text('H ${w.highToday}°  L ${w.lowToday}°',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.95))),
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.95))),
                           const SizedBox(height: 3),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.water_drop_rounded, size: 12, color: Colors.white70),
+                              const Icon(Icons.water_drop_rounded,
+                                  size: 12, color: Colors.white70),
                               const SizedBox(width: 2),
                               Text('${w.humidity}%',
-                                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85))),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white
+                                          .withValues(alpha: 0.85))),
                               const SizedBox(width: 8),
-                              const Icon(Icons.air_rounded, size: 12, color: Colors.white70),
+                              const Icon(Icons.air_rounded,
+                                  size: 12, color: Colors.white70),
                               const SizedBox(width: 2),
                               Text('${w.windMph.round()} mph',
-                                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85))),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white
+                                          .withValues(alpha: 0.85))),
                             ],
                           ),
                         ],
@@ -616,16 +746,25 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.18)),
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(_hourLabel(h.time),
-                                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.9))),
-                                Icon(_wmoIcon(h.code, w.isDay), size: 14, color: Colors.white),
+                                    style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.9))),
+                                Icon(_wmoIcon(h.code, w.isDay),
+                                    size: 14, color: Colors.white),
                                 Text('${h.temp}°',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white)),
                               ],
                             ),
                           ),
@@ -649,7 +788,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     return '$h${t.hour >= 12 ? 'p' : 'a'}';
   }
 
-  static IconData _wmoIcon(int code, bool isDay) => LiveWeather.wmoIcon(code, isDay);
+  static IconData _wmoIcon(int code, bool isDay) =>
+      LiveWeather.wmoIcon(code, isDay);
 
   // Sky gradient that changes with condition + time of day + desert heat.
   LinearGradient _skyGradient(LiveWeather w) {
@@ -754,12 +894,42 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   // ---- Quick actions row ----
   Widget _quickActions(BuildContext context, ColorScheme cs) {
     final actions = <(IconData, String, Color, VoidCallback)>[
-      (Icons.local_offer_rounded, 'Deals', const Color(0xFFFF7043), () => _push(const DealsScreen())),
-      (Icons.pets_rounded, 'Lost Pets', const Color(0xFFAB47BC), () => _push(CategoryScreen(category: 'lost_pets', title: 'Lost Pets'))),
-      (Icons.handyman_rounded, 'Gigs', const Color(0xFF42A5F5), () => _push(CategoryScreen(category: 'gigs', title: 'Gigs & Services'))),
-      (Icons.account_balance_rounded, 'Council', const Color(0xFF66BB6A), () => _push(const CouncilScreen())),
-      (Icons.school_rounded, 'Schools', const Color(0xFFEC407A), () => _push(const SchoolsScreen())),
-      (Icons.work_rounded, 'Freelancers', const Color(0xFFFFA726), () => _push(const FreelancersScreen())),
+      (
+        Icons.local_offer_rounded,
+        'Deals',
+        const Color(0xFFFF7043),
+        () => _push(const DealsScreen())
+      ),
+      (
+        Icons.pets_rounded,
+        'Lost Pets',
+        const Color(0xFFAB47BC),
+        () => _push(CategoryScreen(category: 'lost_pets', title: 'Lost Pets'))
+      ),
+      (
+        Icons.handyman_rounded,
+        'Gigs',
+        const Color(0xFF42A5F5),
+        () => _push(CategoryScreen(category: 'gigs', title: 'Gigs & Services'))
+      ),
+      (
+        Icons.account_balance_rounded,
+        'Council',
+        const Color(0xFF66BB6A),
+        () => _push(const CouncilScreen())
+      ),
+      (
+        Icons.school_rounded,
+        'Schools',
+        const Color(0xFFEC407A),
+        () => _push(const SchoolsScreen())
+      ),
+      (
+        Icons.work_rounded,
+        'Freelancers',
+        const Color(0xFFFFA726),
+        () => _push(const FreelancersScreen())
+      ),
     ];
 
     return Row(
@@ -785,7 +955,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                     ),
                     const SizedBox(height: 5),
                     Text(a.$2,
-                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant),
+                        style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurfaceVariant),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                   ],
@@ -816,7 +989,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(0, 32),
-                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                textStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
               child: const Text('See all'),
             ),
@@ -862,7 +1036,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             if (bizImage != null && bizImage.isNotEmpty)
               Image.network(bizImage, fit: BoxFit.cover)
             else
-              Image.asset('assets/images/banner_business.png', fit: BoxFit.cover),
+              Image.asset('assets/images/banner_business.png',
+                  fit: BoxFit.cover),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -886,7 +1061,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 ),
                 child: const Text('SPONSORED',
                     style: TextStyle(
-                        fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black)),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black)),
               ),
             ),
             Positioned(
@@ -900,7 +1077,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white)),
                   if (headline.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(headline,
@@ -930,19 +1109,24 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           gradient: LinearGradient(
-            colors: [cs.primary.withValues(alpha: 0.14), cs.tertiary.withValues(alpha: 0.08)],
+            colors: [
+              cs.primary.withValues(alpha: 0.14),
+              cs.tertiary.withValues(alpha: 0.08)
+            ],
           ),
           border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: cs.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.star_outline_rounded, color: Color(0xFFFFD600), size: 24),
+              child: const Icon(Icons.star_outline_rounded,
+                  color: Color(0xFFFFD600), size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -950,10 +1134,14 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Own a local business?',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface)),
                   const SizedBox(height: 2),
                   Text('Get featured to the whole community.',
-                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                      style:
+                          TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -967,8 +1155,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   // ---- Weather banner ----
   Color _fireRiskColor(String risk) {
     final r = risk.toLowerCase();
-    if (r.contains('extreme') || r.contains('critical')) return const Color(0xFFFF1744);
-    if (r.contains('high') || r.contains('very')) return const Color(0xFFFF9100);
+    if (r.contains('extreme') || r.contains('critical'))
+      return const Color(0xFFFF1744);
+    if (r.contains('high') || r.contains('very'))
+      return const Color(0xFFFF9100);
     if (r.contains('moderate')) return const Color(0xFFFFD600);
     return const Color(0xFF00E676);
   }
@@ -991,7 +1181,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(0, 32),
-                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                textStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
               child: const Text('See all'),
             ),
@@ -1007,7 +1198,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  Widget _dailyTopicCard(BuildContext context, ColorScheme cs, DiscussionTopicItem t) {
+  Widget _dailyTopicCard(
+      BuildContext context, ColorScheme cs, DiscussionTopicItem t) {
     return GestureDetector(
       onTap: () => _push(TopicScreen(topicId: t.id)),
       child: Container(
@@ -1029,13 +1221,18 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: cs.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text('DAILY QUESTION',
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: cs.primary, letterSpacing: 0.6)),
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: cs.primary,
+                          letterSpacing: 0.6)),
                 ),
                 const Spacer(),
                 Text('by ${t.author}',
@@ -1044,7 +1241,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             ),
             const SizedBox(height: 8),
             Text(t.title,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface)),
             if (t.body.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(t.body,
@@ -1055,13 +1255,20 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.chat_bubble_outline_rounded, size: 13, color: cs.onSurfaceVariant),
+                Icon(Icons.chat_bubble_outline_rounded,
+                    size: 13, color: cs.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text('${t.commentCount} comments',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurfaceVariant)),
                 const Spacer(),
                 Text('Join in',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.primary)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: cs.primary)),
                 Icon(Icons.chevron_right, size: 16, color: cs.primary),
               ],
             ),
@@ -1071,7 +1278,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  Widget _dailyTopicRow(BuildContext context, ColorScheme cs, DiscussionTopicItem t) {
+  Widget _dailyTopicRow(
+      BuildContext context, ColorScheme cs, DiscussionTopicItem t) {
     return GestureDetector(
       onTap: () => _push(TopicScreen(topicId: t.id)),
       child: Container(
@@ -1088,10 +1296,14 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               child: Text(t.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface)),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.chat_bubble_outline_rounded, size: 13, color: cs.onSurfaceVariant),
+            Icon(Icons.chat_bubble_outline_rounded,
+                size: 13, color: cs.onSurfaceVariant),
             const SizedBox(width: 3),
             Text('${t.commentCount}',
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
@@ -1123,16 +1335,22 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         child: Row(
           children: [
             Icon(
-              sev == 'emergency' ? Icons.error : sev == 'warning' ? Icons.warning_amber : Icons.info_outline,
+              sev == 'emergency'
+                  ? Icons.error
+                  : sev == 'warning'
+                      ? Icons.warning_amber
+                      : Icons.info_outline,
               color: color,
               size: 20,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(alert.title,
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: color)),
             ),
-            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5), size: 18),
+            Icon(Icons.chevron_right,
+                color: color.withValues(alpha: 0.5), size: 18),
           ],
         ),
       ),
@@ -1153,7 +1371,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         child: Row(
           children: [
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: cs.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -1166,14 +1385,19 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(s.name,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface)),
                   if (s.type != null)
                     Text(s.type!,
-                      style: TextStyle(fontSize: 12, color: cs.primary)),
+                        style: TextStyle(fontSize: 12, color: cs.primary)),
                   if (s.address != null)
                     Text(s.address!,
-                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                        style:
+                            TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
@@ -1203,8 +1427,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             const SizedBox(width: 10),
             Expanded(
               child: Text(a.title,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: cs.onSurface),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurface),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1213,7 +1441,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(date,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: cs.primary)),
             ),
           ],
         ),
@@ -1223,30 +1454,44 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
   // ---- Nav helpers ----
   void _openNews(BuildContext ctx, NewsItem item) {
-    _push(DetailScreen(title: item.title, itemType: 'news', content: item.content, itemId: item.id, metadata: {
-      if (item.imageUrl != null) 'image_url': item.imageUrl!,
-      if (item.videoUrl != null) 'video_url': item.videoUrl!,
-      if (item.sourceUrl != null) 'source_url': item.sourceUrl!,
-    }));
+    _push(DetailScreen(
+        title: item.title,
+        itemType: 'news',
+        content: item.content,
+        itemId: item.id,
+        metadata: {
+          if (item.imageUrl != null) 'image_url': item.imageUrl!,
+          if (item.videoUrl != null) 'video_url': item.videoUrl!,
+          if (item.sourceUrl != null) 'source_url': item.sourceUrl!,
+        }));
   }
 
-  void _openEvent(BuildContext ctx, EventItem e) =>
-      _push(DetailScreen(title: e.title, itemType: 'event', content: e.description ?? '', itemId: e.id, metadata: {
-        if (e.startDate != null) 'start_date': e.startDate!.toIso8601String(),
-        if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
-        if (e.location != null) 'location': e.location!,
-        if (e.imageUrl != null) 'image_url': e.imageUrl!,
-      }));
+  void _openEvent(BuildContext ctx, EventItem e) => _push(DetailScreen(
+          title: e.title,
+          itemType: 'event',
+          content: e.description ?? '',
+          itemId: e.id,
+          metadata: {
+            if (e.startDate != null)
+              'start_date': e.startDate!.toIso8601String(),
+            if (e.endDate != null) 'end_date': e.endDate!.toIso8601String(),
+            if (e.location != null) 'location': e.location!,
+            if (e.imageUrl != null) 'image_url': e.imageUrl!,
+          }));
 
-  void _openBusiness(BuildContext ctx, BusinessItem b) =>
-      _push(DetailScreen(title: b.name, itemType: 'business', content: b.description ?? '', itemId: b.id, metadata: {
-        if (b.category != null) 'category': b.category!,
-        if (b.contactPhone != null) 'phone': b.contactPhone!,
-        if (b.contactEmail != null) 'email': b.contactEmail!,
-        if (b.website != null) 'website': b.website!,
-        if (b.address != null) 'address': b.address!,
-        if (b.imageUrl != null) 'image_url': b.imageUrl!,
-      }));
+  void _openBusiness(BuildContext ctx, BusinessItem b) => _push(DetailScreen(
+          title: b.name,
+          itemType: 'business',
+          content: b.description ?? '',
+          itemId: b.id,
+          metadata: {
+            if (b.category != null) 'category': b.category!,
+            if (b.contactPhone != null) 'phone': b.contactPhone!,
+            if (b.contactEmail != null) 'email': b.contactEmail!,
+            if (b.website != null) 'website': b.website!,
+            if (b.address != null) 'address': b.address!,
+            if (b.imageUrl != null) 'image_url': b.imageUrl!,
+          }));
 }
 
 /// Timeline entry for sorting news + events
@@ -1254,5 +1499,6 @@ class _TimelineEntry {
   final DateTime date;
   final String type;
   final Widget widget;
-  const _TimelineEntry({required this.date, required this.type, required this.widget});
+  const _TimelineEntry(
+      {required this.date, required this.type, required this.widget});
 }

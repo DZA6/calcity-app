@@ -38,20 +38,19 @@ class NewsItem {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'content': content,
-    'source_url': sourceUrl,
-    'category': category,
-    'image_url': imageUrl,
-    'video_url': videoUrl,
-    'featured': featured,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'title': title,
+        'content': content,
+        'source_url': sourceUrl,
+        'category': category,
+        'image_url': imageUrl,
+        'video_url': videoUrl,
+        'featured': featured,
+        'created_at': createdAt.toIso8601String(),
+      };
 
-  String get excerpt => content.length > 150
-      ? '${content.substring(0, 150)}...'
-      : content;
+  String get excerpt =>
+      content.length > 150 ? '${content.substring(0, 150)}...' : content;
 }
 
 class EventItem {
@@ -93,15 +92,15 @@ class EventItem {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'location': location,
-    'image_url': imageUrl,
-    'start_date': startDate?.toIso8601String(),
-    'end_date': endDate?.toIso8601String(),
-    'category': category,
-  };
+        'id': id,
+        'title': title,
+        'description': description,
+        'location': location,
+        'image_url': imageUrl,
+        'start_date': startDate?.toIso8601String(),
+        'end_date': endDate?.toIso8601String(),
+        'category': category,
+      };
 }
 
 class AlertItem {
@@ -138,14 +137,14 @@ class AlertItem {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'message': message,
-    'severity': severity,
-    'image_url': imageUrl,
-    'is_active': isActive,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'title': title,
+        'message': message,
+        'severity': severity,
+        'image_url': imageUrl,
+        'is_active': isActive,
+        'created_at': createdAt.toIso8601String(),
+      };
 }
 
 class CouncilAgendaItem {
@@ -181,13 +180,13 @@ class CouncilAgendaItem {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'meeting_date': meetingDate?.toIso8601String(),
-    'pdf_url': pdfUrl,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'title': title,
+        'description': description,
+        'meeting_date': meetingDate?.toIso8601String(),
+        'pdf_url': pdfUrl,
+        'created_at': createdAt.toIso8601String(),
+      };
 }
 
 class BusinessItem {
@@ -237,18 +236,18 @@ class BusinessItem {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'category': category,
-    'image_url': imageUrl,
-    'contact_phone': contactPhone,
-    'contact_email': contactEmail,
-    'website': website,
-    'address': address,
-    'is_home_based': isHomeBased,
-    'is_featured': isFeatured,
-  };
+        'id': id,
+        'name': name,
+        'description': description,
+        'category': category,
+        'image_url': imageUrl,
+        'contact_phone': contactPhone,
+        'contact_email': contactEmail,
+        'website': website,
+        'address': address,
+        'is_home_based': isHomeBased,
+        'is_featured': isFeatured,
+      };
 }
 
 class WeatherInfo {
@@ -331,6 +330,53 @@ class SchoolItem {
       calendarUrl: json['calendar_url'] as String?,
       bellScheduleUrl: json['bell_schedule_url'] as String?,
       description: json['description'] as String?,
+    );
+  }
+}
+
+class ChurchItem {
+  final int id;
+  final String name;
+  final String? denomination;
+  final String? description;
+  final String? address;
+  final String? phone;
+  final String? website;
+  final String? serviceTimes;
+  final String? events;
+  final String? foodGiveaway;
+  final String? imageUrl;
+  final bool isDemo;
+
+  ChurchItem({
+    required this.id,
+    required this.name,
+    this.denomination,
+    this.description,
+    this.address,
+    this.phone,
+    this.website,
+    this.serviceTimes,
+    this.events,
+    this.foodGiveaway,
+    this.imageUrl,
+    this.isDemo = false,
+  });
+
+  factory ChurchItem.fromJson(Map<String, dynamic> json) {
+    return ChurchItem(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      denomination: json['denomination'] as String?,
+      description: json['description'] as String?,
+      address: json['address'] as String?,
+      phone: json['phone'] as String?,
+      website: json['website'] as String?,
+      serviceTimes: json['service_times'] as String?,
+      events: json['events'] as String?,
+      foodGiveaway: json['food_giveaway'] as String?,
+      imageUrl: json['image_url'] as String?,
+      isDemo: json['is_demo'] as bool? ?? false,
     );
   }
 }

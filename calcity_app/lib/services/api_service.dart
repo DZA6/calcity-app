@@ -16,9 +16,8 @@ class ApiService {
   ///   1. --dart-define API_BASE_URL (production: PythonAnywhere)
   ///   2. Android emulator loopback (10.0.2.2 -> host machine, dev)
   static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
-  String baseUrl = _envBaseUrl.isNotEmpty
-      ? _envBaseUrl
-      : 'http://10.0.2.2:8000';
+  String baseUrl =
+      _envBaseUrl.isNotEmpty ? _envBaseUrl : 'http://10.0.2.2:8000';
 
   final Duration _timeout = const Duration(seconds: 15);
 
@@ -32,7 +31,8 @@ class ApiService {
 
   // ── Social: comments ──────────────────────────────────────────────
 
-  Future<List<CommentItem>> fetchComments(String contentType, int objectId) async {
+  Future<List<CommentItem>> fetchComments(
+      String contentType, int objectId) async {
     try {
       final resp = await http
           .get(Uri.parse(
@@ -40,8 +40,9 @@ class ApiService {
           .timeout(_timeout);
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
-        final List<dynamic> items =
-            data is Map<String, dynamic> ? data['results'] as List<dynamic> : data;
+        final List<dynamic> items = data is Map<String, dynamic>
+            ? data['results'] as List<dynamic>
+            : data;
         return items
             .map((e) => CommentItem.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -70,7 +71,8 @@ class ApiService {
               headers: _headers(auth: true), body: json.encode(payload))
           .timeout(_timeout);
       if (resp.statusCode == 201) {
-        return CommentItem.fromJson(json.decode(resp.body) as Map<String, dynamic>);
+        return CommentItem.fromJson(
+            json.decode(resp.body) as Map<String, dynamic>);
       }
     } catch (e) {
       // ignore
@@ -148,13 +150,13 @@ class ApiService {
     if (parts.isEmpty) return result;
     try {
       final resp = await http
-          .get(Uri.parse('$baseUrl/api/reactions/bulk/?targets=${parts.join(',')}'))
+          .get(Uri.parse(
+              '$baseUrl/api/reactions/bulk/?targets=${parts.join(',')}'))
           .timeout(_timeout);
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body) as Map<String, dynamic>;
         data.forEach((key, value) {
-          result[key] =
-              ReactionSummary.fromJson(value as Map<String, dynamic>);
+          result[key] = ReactionSummary.fromJson(value as Map<String, dynamic>);
         });
       }
     } catch (e) {
@@ -173,8 +175,9 @@ class ApiService {
       final resp = await http.get(Uri.parse(url)).timeout(_timeout);
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
-        final List<dynamic> items =
-            data is Map<String, dynamic> ? data['results'] as List<dynamic> : data;
+        final List<dynamic> items = data is Map<String, dynamic>
+            ? data['results'] as List<dynamic>
+            : data;
         return items
             .map((e) => DiscussionTopicItem.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -349,8 +352,7 @@ class ApiService {
           .get(Uri.parse('$baseUrl/api/news?category=$category'))
           .timeout(_timeout);
       if (response.statusCode == 200) {
-        final List<dynamic> data =
-            json.decode(response.body) as List<dynamic>;
+        final List<dynamic> data = json.decode(response.body) as List<dynamic>;
         return data
             .map((e) => NewsItem.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -363,12 +365,10 @@ class ApiService {
 
   Future<WeatherInfo?> fetchWeather() async {
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/api/weather'))
-          .timeout(_timeout);
+      final response =
+          await http.get(Uri.parse('$baseUrl/api/weather')).timeout(_timeout);
       if (response.statusCode == 200) {
-        final List<dynamic> data =
-            json.decode(response.body) as List<dynamic>;
+        final List<dynamic> data = json.decode(response.body) as List<dynamic>;
         if (data.isNotEmpty) {
           return WeatherInfo.fromJson(data.first as Map<String, dynamic>);
         }
@@ -394,7 +394,8 @@ class ApiService {
           .timeout(_timeout);
       final data = json.decode(resp.body) as Map<String, dynamic>;
       if (resp.statusCode == 200) {
-        return data['message'] as String? ?? 'Check your email for the reset code.';
+        return data['message'] as String? ??
+            'Check your email for the reset code.';
       }
       return data['error'] as String? ?? 'Something went wrong. Try again.';
     } catch (_) {
@@ -440,6 +441,23 @@ class ApiService {
         final List<dynamic> data = json.decode(response.body) as List<dynamic>;
         return data
             .map((e) => SchoolItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // Network error or timeout — return empty list
+    }
+    return [];
+  }
+
+  Future<List<ChurchItem>> fetchChurches() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/churches?limit=20'))
+          .timeout(_timeout);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body) as List<dynamic>;
+        return data
+            .map((e) => ChurchItem.fromJson(e as Map<String, dynamic>))
             .toList();
       }
     } catch (e) {

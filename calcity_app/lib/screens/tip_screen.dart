@@ -26,6 +26,20 @@ class _TipScreenState extends State<TipScreen> {
     'Other',
   ];
 
+  /// Map the dropdown's display label to the backend category slug.
+  String _categorySlug(String? label) {
+    switch (label) {
+      case 'News Tip':
+        return 'news';
+      case 'Event Suggestion':
+        return 'event';
+      case 'Business Recommendation':
+        return 'business';
+      default:
+        return 'general';
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -43,7 +57,7 @@ class _TipScreenState extends State<TipScreen> {
       name: _nameController.text,
       email: _emailController.text,
       content: _contentController.text,
-      category: _selectedCategory,
+      category: _categorySlug(_selectedCategory),
     );
 
     setState(() => _isSubmitting = false);

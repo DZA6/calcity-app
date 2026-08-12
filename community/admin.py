@@ -4,6 +4,7 @@ from django.utils.html import format_html
 from .models import (
     Alert,
     Business,
+    Church,
     Comment,
     CommunityTip,
     CouncilAgenda,
@@ -125,6 +126,14 @@ class SchoolAdmin(admin.ModelAdmin):
     list_display = ("name", "type", "phone", "is_approved", "created_at")
     list_filter = ("type", "is_approved")
     search_fields = ("name", "description", "address")
+    list_editable = ("is_approved",)
+
+
+@admin.register(Church)
+class ChurchAdmin(admin.ModelAdmin):
+    list_display = ("name", "denomination", "phone", "is_approved", "created_at")
+    list_filter = ("denomination", "is_approved")
+    search_fields = ("name", "description", "address", "denomination")
     list_editable = ("is_approved",)
 
 

@@ -4,6 +4,7 @@ from rest_framework import serializers
 from .models import (
     Alert,
     Business,
+    Church,
     Comment,
     CommunityTip,
     CouncilAgenda,
@@ -117,6 +118,18 @@ class SchoolSerializer(serializers.ModelSerializer):
         model = School
         fields = "__all__"
         read_only_fields = ["id", "created_at"]
+
+
+class ChurchSerializer(serializers.ModelSerializer, MediaUrlMixin):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Church
+        fields = "__all__"
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_image_url(self, obj):
+        return self._abs("image")
 
 
 class WeatherInfoSerializer(serializers.ModelSerializer):
