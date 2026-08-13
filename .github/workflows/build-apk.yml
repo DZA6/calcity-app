@@ -46,6 +46,18 @@ jobs:
         working-directory: calcity_app
         run: flutter pub get
 
+      - name: Set up release signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/calcity-release.jks"
+          printf 'storeFile=%s/calcity-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP" "$STORE_PASS" "$KEY_ALIAS" "$KEY_PASS" \
+            > calcity_app/android/key.properties
+
       - name: Build release APK
         working-directory: calcity_app
         # Auto-increment version code/name per CI run so new builds always
