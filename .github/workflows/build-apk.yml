@@ -48,7 +48,9 @@ jobs:
 
       - name: Build release APK
         working-directory: calcity_app
-        run: flutter build apk --release --dart-define=API_BASE_URL=https://calcityapp-MMSantelopevalley.pythonanywhere.com
+        # Auto-increment version code/name per CI run so new builds always
+        # install over previous APKs (versionCode was stuck at 1 before).
+        run: flutter build apk --release --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=API_BASE_URL=https://calcityapp-MMSantelopevalley.pythonanywhere.com
 
       - name: Upload APK to release "latest"
         uses: softprops/action-gh-release@v2
