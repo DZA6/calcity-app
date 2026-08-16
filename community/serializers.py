@@ -350,3 +350,37 @@ class ReactionInputSerializer(serializers.Serializer):
             )
         data["_ct"] = ct
         return data
+
+
+# ── Classifieds & newsletter ────────────────────────────────────────
+
+
+class ClassifiedCreateSerializer(serializers.ModelSerializer):
+    """Public submission of a classified / announcement.
+
+    Always creates an unapproved NewsItem (pending staff review) so user
+    submissions stay hidden until approved in the dashboard.
+    """
+
+    class Meta:
+        model = NewsItem
+        fields = ["id", "title", "content", "category", "source_url", "is_approved", "created_at"]
+        read_only_fields = ["id", "is_approved", "created_at"]
+        extra_kwargs = {
+            "source_url": {"required": False, "allow_blank": True},
+        }
+
+    def validate_category(self, value):
+        if value not in ("for_sale", "announcements"):
+            raise serializers.ValidationError(
+                "Category must be 'for_sale' or 'announcements'."
+            )
+        return value
+
+    def create(self, validated_data):
+        validated_data["is_approved"] = False
+        return NewsItem.objects.create(**validated_data)
+
+
+class NewsletterEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()

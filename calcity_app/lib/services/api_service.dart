@@ -490,4 +490,46 @@ class ApiService {
     } catch (_) {}
     return [];
   }
+
+  // ── Classifieds & newsletter ─────────────────────────────────────
+
+  /// Submit a classified or announcement. Returns the new item id on success.
+  Future<int?> postClassified({
+    required String title,
+    required String content,
+    required String category, // 'for_sale' | 'announcements'
+  }) async {
+    try {
+      final resp = await http
+          .post(Uri.parse('$baseUrl/api/classifieds/'),
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode({
+                'title': title,
+                'content': content,
+                'category': category,
+              }))
+          .timeout(_timeout);
+      if (resp.statusCode == 201) {
+        final data = json.decode(resp.body) as Map<String, dynamic>;
+        return data['id'] as int?;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
+  /// Subscribe an email to the community digest.
+  Future<bool> subscribeNewsletter(String email) async {
+    try {
+      final resp = await http
+          .post(Uri.parse('$baseUrl/api/newsletter/subscribe/'),
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode({'email': email.trim()}))
+          .timeout(_timeout);
+      return resp.statusCode == 200 || resp.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
 }

@@ -84,6 +84,87 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _push(Widget screen) => Navigator.push(context, AppPageRoute(screen));
 
+  Future<void> _showPostDialog(BuildContext context) async {
+    final api = ApiService();
+    final category = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Post to the community'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'for_sale'),
+            child: const ListTile(
+              leading: Icon(Icons.sell_outlined),
+              title: Text('For Sale & Free'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'announcements'),
+            child: const ListTile(
+              leading: Icon(Icons.campaign_outlined),
+              title: Text('Announcement'),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (category == null || !mounted) return;
+
+    final titleController = TextEditingController();
+    final bodyController = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(category == 'for_sale'
+            ? 'Post a For Sale / Free item'
+            : 'Post an announcement'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: bodyController,
+              decoration: const InputDecoration(labelText: 'Description'),
+              maxLines: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Submit')),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      final title = titleController.text.trim();
+      final body = bodyController.text.trim();
+      if (title.isEmpty || body.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Title and description are required.')));
+        }
+        return;
+      }
+      final id = await api.postClassified(
+          title: title, content: body, category: category);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(id != null
+                ? 'Submitted! It will appear after staff approval.'
+                : 'Could not submit. Try again.')));
+      }
+    }
+  }
+
   Widget _shimmerLoading() {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade900,
@@ -144,6 +225,11 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       appBar: _appBar(context, cs),
       drawer: _buildDrawer(context),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showPostDialog(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Post'),
+      ),
       body: Consumer2<ContentProvider, SettingsProvider>(
         builder: (context, prov, settings, _) {
           if (prov.isLoading && prov.news.isEmpty) {
@@ -930,44 +1016,60 @@ class _HomeScreenState extends State<HomeScreen>
         const Color(0xFFFFA726),
         () => _push(const FreelancersScreen())
       ),
+      (
+        Icons.sell_rounded,
+        'For Sale',
+        const Color(0xFF00897B),
+        () => _push(CategoryScreen(category: 'for_sale', title: 'For Sale & Free'))
+      ),
+      (
+        Icons.campaign_rounded,
+        'Announcements',
+        const Color(0xFF5E35B1),
+        () => _push(CategoryScreen(category: 'announcements', title: 'Announcements'))
+      ),
     ];
 
-    return Row(
-      children: [
-        for (final a in actions) ...[
-          if (a != actions.first) const SizedBox(width: 8),
-          Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: a.$4,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: a.$3.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(15),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final a in actions) ...[
+            if (a != actions.first) const SizedBox(width: 8),
+            SizedBox(
+              width: 74,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: a.$4,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: a.$3.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Icon(a.$1, color: a.$3, size: 22),
                       ),
-                      child: Icon(a.$1, color: a.$3, size: 22),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(a.$2,
-                        style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                            color: cs.onSurfaceVariant),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ],
+                      const SizedBox(height: 5),
+                      Text(a.$2,
+                          style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

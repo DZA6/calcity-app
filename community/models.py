@@ -18,6 +18,8 @@ class NewsItem(models.Model):
         ("community", "Community Events"),
         ("lost_pets", "Lost Pets"),
         ("gigs", "Gigs & Services"),
+        ("for_sale", "For Sale & Free"),
+        ("announcements", "Announcements"),
         ("neighbor", "Neighbor Appreciation"),
     ]
 
@@ -387,4 +389,20 @@ class Deal(models.Model):
         return f"{self.business.name}: {self.title}"
 
     class Meta:
+        ordering = ["-created_at"]
+
+
+class NewsletterSubscriber(models.Model):
+    """Email address opted in to the community digest (news + events)."""
+
+    email = models.EmailField(unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.email
+
+    class Meta:
+        verbose_name = "Newsletter Subscriber"
+        verbose_name_plural = "Newsletter Subscribers"
         ordering = ["-created_at"]

@@ -34,8 +34,10 @@ class PushService {
         // User declined — the app still works, just no notifications.
       }
 
-      // Community alert pushes.
+      // Topic subscriptions: community alerts + news/events digests.
       await messaging.subscribeToTopic('alerts');
+      await messaging.subscribeToTopic('news');
+      await messaging.subscribeToTopic('events');
 
       // Foreground messages (v1: silent; v2: heads-up banner via
       // flutter_local_notifications if we want in-app display).

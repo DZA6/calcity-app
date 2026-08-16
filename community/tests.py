@@ -8,6 +8,7 @@ Categories:
   - FCM no-op safety
   - Model field / category-map integrity
 """
+import json
 import os
 import re
 from datetime import datetime
@@ -24,6 +25,7 @@ from community.models import (
     Comment,
     DiscussionTopic,
     Event,
+    NewsletterSubscriber,
     NewsItem,
     Reaction,
     School,
@@ -327,6 +329,65 @@ class ManagementNewsBulkTests(TestCase):
         from django.urls import reverse
         r = self.c.get(reverse("manage:news_bulk_delete_older"))
         self.assertEqual(r.status_code, 405)
+
+
+class EngagementEndpointTests(TestCase):
+    """Classified submissions + newsletter subscription endpoints."""
+
+    def setUp(self):
+        self.c = Client(HTTP_HOST="localhost")
+
+    def test_classified_creates_pending(self):
+        r = self.c.post(
+            "/api/classifieds/",
+            data=json.dumps({
+                "title": "Couch for sale",
+                "content": "Good condition",
+                "category": "for_sale",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(r.status_code, 201)
+        body = r.json()
+        self.assertFalse(body["is_approved"])
+        self.assertEqual(body["category"], "for_sale")
+
+    def test_classified_rejects_other_category(self):
+        r = self.c.post(
+            "/api/classifieds/",
+            data=json.dumps({"title": "x", "content": "y", "category": "general"}),
+            content_type="application/json",
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_newsletter_subscribe_and_unsubscribe(self):
+        r = self.c.post(
+            "/api/newsletter/subscribe/",
+            data=json.dumps({"email": "person@example.com"}),
+            content_type="application/json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(
+            NewsletterSubscriber.objects.filter(
+                email="person@example.com", is_active=True
+            ).exists()
+        )
+        r2 = self.c.post(
+            "/api/newsletter/unsubscribe/",
+            data=json.dumps({"email": "person@example.com"}),
+            content_type="application/json",
+        )
+        self.assertEqual(r2.status_code, 200)
+        self.assertFalse(
+            NewsletterSubscriber.objects.filter(
+                email="person@example.com", is_active=True
+            ).exists()
+        )
+
+    def test_category_choices_include_classifieds(self):
+        slugs = {c for c, _ in NewsItem.CATEGORY_CHOICES}
+        self.assertIn("for_sale", slugs)
+        self.assertIn("announcements", slugs)
 
 
 # ── API views & model integrity ─────────────────────────────────────

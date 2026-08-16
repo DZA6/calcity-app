@@ -91,6 +91,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'color': Color(0xFF3E6B8C)
     },
     {
+      'slug': 'for_sale',
+      'label': 'For Sale & Free',
+      'icon': Icons.sell_outlined,
+      'color': Color(0xFF00897B)
+    },
+    {
+      'slug': 'announcements',
+      'label': 'Announcements',
+      'icon': Icons.campaign_outlined,
+      'color': Color(0xFF5E35B1)
+    },
+    {
       'slug': 'neighbor',
       'label': 'Neighbor Love',
       'icon': Icons.favorite_outline,

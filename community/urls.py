@@ -19,6 +19,9 @@ router.register(r"comments", views.CommentViewSet, basename="comment")
 
 urlpatterns = router.urls + [
     path("tips/", views.TipCreateView.as_view(), name="tip-create"),
+    path("classifieds/", views.ClassifiedCreateView.as_view(), name="classified-create"),
+    path("newsletter/subscribe/", views.NewsletterSubscribeView.as_view(), name="newsletter-subscribe"),
+    path("newsletter/unsubscribe/", views.NewsletterUnsubscribeView.as_view(), name="newsletter-unsubscribe"),
     path("reactions/toggle/", views.ReactionToggleView.as_view(), name="reaction-toggle"),
     path("reactions/summary/", views.ReactionSummaryView.as_view(), name="reaction-summary"),
     path("reactions/bulk/", views.ReactionBulkView.as_view(), name="reaction-bulk"),

@@ -21,6 +21,7 @@ from .models import (
     Event,
     FeaturedPlacement,
     NewsItem,
+    NewsletterSubscriber,
     Reaction,
     School,
     WeatherInfo,
@@ -29,6 +30,7 @@ from .serializers import (
     AlertSerializer,
     BusinessSerializer,
     ChurchSerializer,
+    ClassifiedCreateSerializer,
     CommentSerializer,
     CommunityTipSerializer,
     CouncilAgendaSerializer,
@@ -36,6 +38,7 @@ from .serializers import (
     DiscussionTopicSerializer,
     EventSerializer,
     FeaturedPlacementSerializer,
+    NewsletterEmailSerializer,
     NewsItemSerializer,
     ReactionInputSerializer,
     SchoolSerializer,
@@ -380,3 +383,65 @@ class ReactionBulkView(APIView):
                 continue
             out[f"{key}:{object_id}"] = reaction_summary(ct, object_id, request.user)
         return Response(out)
+
+
+# ── Classifieds & newsletter ─────────────────────────────────────────
+
+
+class ClassifiedCreateView(CreateAPIView):
+    """Public endpoint — submit a classified / announcement.
+
+    Creates an unapproved NewsItem (hidden until staff approves).
+    Rate-limited to 10/hour/IP to deter spam.
+    """
+
+    serializer_class = ClassifiedCreateSerializer
+
+    @method_decorator(ratelimit(key="ip", rate="10/h", method="POST", block=False))
+    def post(self, request, *args, **kwargs):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many posts. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        return super().post(request, *args, **kwargs)
+
+
+class NewsletterSubscribeView(APIView):
+    """POST {email} — opt in to the community digest."""
+
+    permission_classes = [AllowAny]
+
+    @method_decorator(ratelimit(key="ip", rate="20/h", method="POST", block=False))
+    def post(self, request):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many requests. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        serializer = NewsletterEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].lower()
+        sub, created = NewsletterSubscriber.objects.get_or_create(
+            email=email, defaults={"is_active": True}
+        )
+        if not created and not sub.is_active:
+            sub.is_active = True
+            sub.save(update_fields=["is_active"])
+        return Response(
+            {"ok": True, "email": email},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class NewsletterUnsubscribeView(APIView):
+    """POST {email} — opt out of the community digest."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = NewsletterEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].lower()
+        NewsletterSubscriber.objects.filter(email=email).update(is_active=False)
+        return Response({"ok": True})
