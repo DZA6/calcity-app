@@ -7,49 +7,20 @@
 
 {% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
 
-<!-- Stats (clickable — jump to the matching section) -->
-<div class="stats">
-  <a href="{% url 'manage:news_list' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ news_approved }}/{{ news_count }}</div>
-    <div class="stat-label">Approved Articles &rarr;</div>
-  </a>
-  <a href="{% url 'manage:alerts' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ active_alerts }}</div>
-    <div class="stat-label">Active Alerts &rarr;</div>
-  </a>
-  <a href="{% url 'manage:events_list' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ upcoming_events }}</div>
-    <div class="stat-label">Upcoming Events &rarr;</div>
-  </a>
-  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ pending_tips }}</div>
-    <div class="stat-label">Pending Tips &rarr;</div>
-  </a>
-  <a href="{% url 'manage:schools_list' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ school_count }}</div>
-    <div class="stat-label">Schools &rarr;</div>
-  </a>
-  <a href="{% url 'manage:businesses_list' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ business_count }}</div>
-    <div class="stat-label">Businesses &rarr;</div>
-  </a>
-  <a href="{% url 'manage:deals_list' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ deal_count }}</div>
-    <div class="stat-label">Active Deals &rarr;</div>
-  </a>
-  <a href="{% url 'manage:featured_list' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ featured_count }}</div>
-    <div class="stat-label">Featured &rarr;</div>
-  </a>
-  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ topic_count }}</div>
-    <div class="stat-label">Discussions &rarr;</div>
-  </a>
-  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
-    <div class="stat-num">{{ comment_count }}</div>
-    <div class="stat-label">Comments &rarr;</div>
-  </a>
+<!-- Needs attention (action queue) -->
+{% if pending_total %}
+<div class="card" style="margin-bottom:20px;padding:14px 16px;border-left:4px solid var(--warning);">
+  <strong style="color:#8B6914;">&#9888; Needs attention — {{ pending_total }} pending</strong>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+    {% if pending_news %}<a href="{% url 'manage:news_list' %}?status=pending" class="badge badge-warning" style="text-decoration:none;padding:6px 12px;">{{ pending_news }} article{{ pending_news|pluralize }}</a>{% endif %}
+    {% if pending_events %}<a href="{% url 'manage:events_list' %}?status=pending" class="badge badge-warning" style="text-decoration:none;padding:6px 12px;">{{ pending_events }} event{{ pending_events|pluralize }}</a>{% endif %}
+    {% if pending_businesses %}<a href="{% url 'manage:businesses_list' %}?status=pending" class="badge badge-warning" style="text-decoration:none;padding:6px 12px;">{{ pending_businesses }} business{{ pending_businesses|pluralize }}</a>{% endif %}
+    {% if pending_tips %}<a href="{% url 'manage:moderation' %}" class="badge badge-warning" style="text-decoration:none;padding:6px 12px;">{{ pending_tips }} tip{{ pending_tips|pluralize }}</a>{% endif %}
+    {% if pending_agendas %}<a href="{% url 'manage:council_list' %}" class="badge badge-warning" style="text-decoration:none;padding:6px 12px;">{{ pending_agendas }} agenda{{ pending_agendas|pluralize }}</a>{% endif %}
+    {% if pending_churches %}<a href="/admin/community/church/?is_approved__exact=0" class="badge badge-warning" style="text-decoration:none;padding:6px 12px;">{{ pending_churches }} church{{ pending_churches|pluralize }}</a>{% endif %}
+  </div>
 </div>
+{% endif %}
 
 <!-- Quick Actions -->
 <div class="quick-actions">
@@ -84,6 +55,58 @@
   <a href="{% url 'manage:featured_edit' %}" class="qa-card">
     <div class="qa-icon">&#11088;</div>
     <div><div class="qa-text">Featured Slot</div><div class="qa-desc">Paid business promotion</div></div>
+  </a>
+</div>
+
+<!-- Stats (clickable — jump to the matching section) -->
+<div class="stats">
+  <a href="{% url 'manage:news_list' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ news_approved }}/{{ news_count }}</div>
+    <div class="stat-label">Approved Articles &rarr;</div>
+  </a>
+  <a href="{% url 'manage:events_list' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ upcoming_events }}</div>
+    <div class="stat-label">Upcoming Events &rarr;</div>
+  </a>
+  <a href="{% url 'manage:alerts' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ active_alerts }}</div>
+    <div class="stat-label">Active Alerts &rarr;</div>
+  </a>
+  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ pending_tips }}</div>
+    <div class="stat-label">Pending Tips &rarr;</div>
+  </a>
+  <a href="{% url 'manage:businesses_list' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ business_count }}</div>
+    <div class="stat-label">Businesses &rarr;</div>
+  </a>
+  <a href="{% url 'manage:schools_list' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ school_count }}</div>
+    <div class="stat-label">Schools &rarr;</div>
+  </a>
+  <a href="/admin/community/church/" class="stat-card stat-link">
+    <div class="stat-num">{{ church_count }}</div>
+    <div class="stat-label">Churches &rarr;</div>
+  </a>
+  <a href="/admin/community/businessreview/" class="stat-card stat-link">
+    <div class="stat-num">{{ review_count }}</div>
+    <div class="stat-label">Reviews &rarr;</div>
+  </a>
+  <a href="{% url 'manage:deals_list' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ deal_count }}</div>
+    <div class="stat-label">Active Deals &rarr;</div>
+  </a>
+  <a href="{% url 'manage:featured_list' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ featured_count }}</div>
+    <div class="stat-label">Featured &rarr;</div>
+  </a>
+  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ topic_count }}</div>
+    <div class="stat-label">Discussions &rarr;</div>
+  </a>
+  <a href="{% url 'manage:moderation' %}" class="stat-card stat-link">
+    <div class="stat-num">{{ comment_count }}</div>
+    <div class="stat-label">Comments &rarr;</div>
   </a>
 </div>
 
@@ -162,9 +185,53 @@
   {% endif %}
 </div>
 
+<!-- Upcoming Events -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    Upcoming Events
+    <a href="{% url 'manage:events_list' %}" class="btn btn-sm btn-outline">View All</a>
+  </div>
+  {% if recent_events %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Event</th><th>When</th><th>Location</th></tr></thead>
+      <tbody>
+      {% for e in recent_events %}
+      <tr>
+        <td><a href="{% url 'manage:event_edit' e.pk %}" style="color:var(--text);text-decoration:none;">{{ e.title|truncatechars:50 }}</a></td>
+        <td style="font-size:0.85rem;color:var(--text-light);white-space:nowrap;">{{ e.start_date|date:"M j, g:i A" }}</td>
+        <td style="font-size:0.85rem;color:var(--text-light);">{{ e.location|truncatechars:30 }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state"><div class="empty-icon">&#128197;</div>No upcoming events. <a href="{% url 'manage:event_edit' %}">Add one.</a></div>
+  {% endif %}
+</div>
+
+<!-- Recent Reviews -->
+{% if recent_reviews %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    Recent Reviews
+    <a href="/admin/community/businessreview/" class="btn btn-sm btn-outline">Manage</a>
+  </div>
+  {% for r in recent_reviews %}
+  <div style="padding:10px 14px;border-bottom:1px solid var(--border);{% if forloop.last %}border-bottom:none;{% endif %}">
+    <span style="color:#F5A623;">&#9733; {{ r.rating }}</span>
+    <strong style="margin-left:6px;">{{ r.business.name }}</strong>
+    <span style="color:var(--text-light);font-size:0.85rem;">&mdash; {{ r.author.username }}</span>
+    {% if r.body %}<div style="font-size:0.85rem;color:var(--text-light);margin-top:2px;">{{ r.body|truncatechars:100 }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <!-- Active Alerts -->
 {% if recent_alerts %}
-<div class="card">
+<div class="card" style="margin-bottom: 24px;">
   <div class="card-header">
     Active Alerts
     <a href="{% url 'manage:alerts' %}" class="btn btn-sm btn-outline">Manage</a>
@@ -179,4 +246,12 @@
   {% endfor %}
 </div>
 {% endif %}
+
+<!-- System status -->
+<div class="card" style="padding:12px 16px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:0.85rem;color:var(--text-light);">
+  <strong style="color:var(--text);">System status</strong>
+  <span class="badge {% if fcm_configured %}badge-success{% else %}badge-neutral{% endif %}">Push notifications: {% if fcm_configured %}on{% else %}off{% endif %}</span>
+  <span class="badge {% if smtp_configured %}badge-success{% else %}badge-neutral{% endif %}">Email: {% if smtp_configured %}on{% else %}off{% endif %}</span>
+  <span class="badge badge-neutral">{{ subscriber_count }} newsletter subscriber{{ subscriber_count|pluralize }}</span>
+</div>
 {% endblock %}

@@ -11,8 +11,10 @@ Simple, modern UI for daily content management:
 Access at /manage/ (requires Django admin login).
 """
 import json
+import os
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -27,6 +29,8 @@ from .services.weather_service import get_live_weather
 from .models import (
     Alert,
     Business,
+    BusinessReview,
+    Church,
     Comment,
     CommunityTip,
     CouncilAgenda,
@@ -34,6 +38,7 @@ from .models import (
     DiscussionTopic,
     Event,
     FeaturedPlacement,
+    NewsletterSubscriber,
     NewsItem,
     School,
     WeatherInfo,
@@ -44,7 +49,14 @@ from .models import (
 
 @staff_member_required
 def dashboard(request):
-    """Main management dashboard with stats and quick actions."""
+    """Main management dashboard: action queue, quick actions, KPIs, activity."""
+    pending_news = NewsItem.objects.filter(is_approved=False).count()
+    pending_events = Event.objects.filter(is_approved=False).count()
+    pending_businesses = Business.objects.filter(is_approved=False).count()
+    pending_tips = CommunityTip.objects.filter(is_approved=False).count()
+    pending_agendas = CouncilAgenda.objects.filter(is_approved=False).count()
+    pending_churches = Church.objects.filter(is_approved=False).count()
+
     ctx = {
         "news_count": NewsItem.objects.count(),
         "news_approved": NewsItem.objects.filter(is_approved=True).count(),
@@ -57,14 +69,37 @@ def dashboard(request):
         "live_weather": get_live_weather(),
         "recent_news": NewsItem.objects.order_by("-created_at")[:8],
         "recent_alerts": Alert.objects.order_by("-created_at")[:5],
-        "recent_events": Event.objects.filter(is_approved=True).order_by("start_date")[:5],
-        "pending_tips": CommunityTip.objects.filter(is_approved=False).count(),
+        "recent_events": Event.objects.filter(
+            is_approved=True, start_date__gte=timezone.now()
+        ).order_by("start_date")[:6],
+        "recent_reviews": (
+            BusinessReview.objects.select_related("business", "author")
+            .order_by("-created_at")[:5]
+        ),
+        "pending_total": (
+            pending_news + pending_events + pending_businesses
+            + pending_tips + pending_agendas + pending_churches
+        ),
+        "pending_news": pending_news,
+        "pending_events": pending_events,
+        "pending_businesses": pending_businesses,
+        "pending_tips": pending_tips,
+        "pending_agendas": pending_agendas,
+        "pending_churches": pending_churches,
         "school_count": School.objects.count(),
         "business_count": Business.objects.count(),
+        "church_count": Church.objects.count(),
+        "review_count": BusinessReview.objects.count(),
         "deal_count": Deal.objects.filter(is_active=True).count(),
         "featured_count": FeaturedPlacement.objects.filter(is_active=True, is_paid=True).count(),
         "topic_count": DiscussionTopic.objects.count(),
         "comment_count": Comment.objects.count(),
+        "subscriber_count": NewsletterSubscriber.objects.filter(is_active=True).count(),
+        "fcm_configured": bool(
+            os.environ.get("FIREBASE_SERVICE_ACCOUNT_PATH")
+            or os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+        ),
+        "smtp_configured": bool(getattr(settings, "EMAIL_HOST", "")),
     }
     return render(request, "manage/dashboard.html", ctx)
 
