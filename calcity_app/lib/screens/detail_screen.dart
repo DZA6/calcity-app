@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../widgets/comments_section.dart';
 import '../widgets/reaction_bar.dart';
+import '../widgets/business_reviews_section.dart';
 
 class DetailScreen extends StatelessWidget {
   final String title;
@@ -73,6 +74,12 @@ class DetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Business reviews (business detail only)
+            if (itemType == 'business' && itemId != null) ...[
+              BusinessReviewsSection(businessId: itemId!),
+              const SizedBox(height: 24),
+            ],
 
             // Social: reactions + comments (needs a backend item id)
             if (itemId != null) ...[

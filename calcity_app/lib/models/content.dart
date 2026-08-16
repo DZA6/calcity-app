@@ -202,6 +202,8 @@ class BusinessItem {
   final bool isHomeBased;
   final bool isFeatured;
   final bool isDemo;
+  final double? rating;
+  final int reviewCount;
 
   BusinessItem({
     required this.id,
@@ -216,6 +218,8 @@ class BusinessItem {
     this.isHomeBased = false,
     this.isFeatured = false,
     this.isDemo = false,
+    this.rating,
+    this.reviewCount = 0,
   });
 
   factory BusinessItem.fromJson(Map<String, dynamic> json) {
@@ -232,6 +236,8 @@ class BusinessItem {
       isHomeBased: json['is_home_based'] as bool? ?? false,
       isFeatured: json['is_featured'] as bool? ?? false,
       isDemo: json['is_demo'] as bool? ?? false,
+      rating: (json['rating'] as num?)?.toDouble(),
+      reviewCount: json['review_count'] as int? ?? 0,
     );
   }
 
@@ -247,6 +253,8 @@ class BusinessItem {
         'address': address,
         'is_home_based': isHomeBased,
         'is_featured': isFeatured,
+        'rating': rating,
+        'review_count': reviewCount,
       };
 }
 
@@ -377,6 +385,34 @@ class ChurchItem {
       foodGiveaway: json['food_giveaway'] as String?,
       imageUrl: json['image_url'] as String?,
       isDemo: json['is_demo'] as bool? ?? false,
+    );
+  }
+}
+
+class BusinessReviewItem {
+  final int id;
+  final String author;
+  final int rating;
+  final String body;
+  final DateTime createdAt;
+
+  BusinessReviewItem({
+    required this.id,
+    required this.author,
+    required this.rating,
+    required this.body,
+    required this.createdAt,
+  });
+
+  factory BusinessReviewItem.fromJson(Map<String, dynamic> json) {
+    return BusinessReviewItem(
+      id: json['id'] as int,
+      author: json['author'] as String? ?? '',
+      rating: json['rating'] as int? ?? 0,
+      body: json['body'] as String? ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
     );
   }
 }

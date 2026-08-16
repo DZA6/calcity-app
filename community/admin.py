@@ -4,6 +4,7 @@ from django.utils.html import format_html
 from .models import (
     Alert,
     Business,
+    BusinessReview,
     Church,
     Comment,
     CommunityTip,
@@ -104,6 +105,19 @@ class BusinessAdmin(admin.ModelAdmin):
         return _thumb(obj, "image")
 
     image_thumb.short_description = "Image"
+
+
+@admin.register(BusinessReview)
+class BusinessReviewAdmin(admin.ModelAdmin):
+    list_display = ("business", "author", "rating", "body_short", "is_hidden", "created_at")
+    list_filter = ("rating", "is_hidden")
+    search_fields = ("business__name", "author__username", "body")
+    list_editable = ("is_hidden",)
+    raw_id_fields = ("business", "author")
+
+    @admin.display(description="Review")
+    def body_short(self, obj):
+        return obj.body[:60] + ("\u2026" if len(obj.body) > 60 else "")
 
 
 @admin.register(CommunityTip)

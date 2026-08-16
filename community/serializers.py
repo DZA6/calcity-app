@@ -4,6 +4,7 @@ from rest_framework import serializers
 from .models import (
     Alert,
     Business,
+    BusinessReview,
     Church,
     Comment,
     CommunityTip,
@@ -64,6 +65,8 @@ class EventSerializer(serializers.ModelSerializer, MediaUrlMixin):
 
 class BusinessSerializer(serializers.ModelSerializer, MediaUrlMixin):
     image_url = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Business
@@ -75,6 +78,18 @@ class BusinessSerializer(serializers.ModelSerializer, MediaUrlMixin):
 
     def get_image_url(self, obj):
         return self._abs("image")
+
+    def _visible_reviews(self, obj):
+        return [r for r in obj.reviews.all() if not r.is_hidden]
+
+    def get_rating(self, obj):
+        reviews = self._visible_reviews(obj)
+        if not reviews:
+            return None
+        return round(sum(r.rating for r in reviews) / len(reviews), 1)
+
+    def get_review_count(self, obj):
+        return len(self._visible_reviews(obj))
 
 
 class CommunityTipSerializer(serializers.ModelSerializer):
@@ -384,3 +399,17 @@ class ClassifiedCreateSerializer(serializers.ModelSerializer):
 
 class NewsletterEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class BusinessReviewSerializer(serializers.ModelSerializer):
+    author = serializers.CharField(source="author.username", read_only=True)
+
+    class Meta:
+        model = BusinessReview
+        fields = ["id", "business", "author", "rating", "body", "created_at"]
+        read_only_fields = ["id", "business", "author", "created_at"]
+
+    def validate_rating(self, value):
+        if not (1 <= value <= 5):
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value

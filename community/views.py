@@ -8,10 +8,12 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
+from django.shortcuts import get_object_or_404
 
 from .models import (
     Alert,
     Business,
+    BusinessReview,
     Church,
     Comment,
     CommunityTip,
@@ -28,6 +30,7 @@ from .models import (
 )
 from .serializers import (
     AlertSerializer,
+    BusinessReviewSerializer,
     BusinessSerializer,
     ChurchSerializer,
     ClassifiedCreateSerializer,
@@ -69,7 +72,7 @@ class EventViewSet(viewsets.ReadOnlyModelViewSet):
 class BusinessViewSet(viewsets.ReadOnlyModelViewSet):
     """Public API — only returns approved businesses."""
 
-    queryset = Business.objects.filter(is_approved=True)
+    queryset = Business.objects.filter(is_approved=True).prefetch_related("reviews")
     serializer_class = BusinessSerializer
     pagination_class = None
     ordering = ["name"]
@@ -445,3 +448,53 @@ class NewsletterUnsubscribeView(APIView):
         email = serializer.validated_data["email"].lower()
         NewsletterSubscriber.objects.filter(email=email).update(is_active=False)
         return Response({"ok": True})
+
+
+class BusinessReviewView(APIView):
+    """GET/POST /api/businesses/<id>/reviews/ — list and write reviews.
+
+    Read is public; writing requires an authenticated user (one review per
+    user per business — re-posting updates their existing review).
+    """
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, business_id):
+        business = get_object_or_404(Business, pk=business_id)
+        reviews = (
+            business.reviews.filter(is_hidden=False)
+            .select_related("author")
+            .order_by("-created_at")
+        )
+        data = BusinessReviewSerializer(
+            reviews, many=True, context={"request": request}
+        ).data
+        average = (
+            round(sum(r["rating"] for r in data) / len(data), 1)
+            if data
+            else None
+        )
+        return Response({"average": average, "count": len(data), "reviews": data})
+
+    @method_decorator(ratelimit(key="user_or_ip", rate="20/h", method="POST", block=False))
+    def post(self, request, business_id):
+        if getattr(request, "limited", False):
+            return Response(
+                {"error": "Too many reviews. Please slow down."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        business = get_object_or_404(Business, pk=business_id)
+        serializer = BusinessReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review, created = BusinessReview.objects.update_or_create(
+            business=business,
+            author=request.user,
+            defaults={
+                "rating": serializer.validated_data["rating"],
+                "body": serializer.validated_data.get("body", ""),
+            },
+        )
+        return Response(
+            BusinessReviewSerializer(review, context={"request": request}).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )

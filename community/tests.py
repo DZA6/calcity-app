@@ -22,6 +22,7 @@ from rest_framework.test import APIClient
 from community.models import (
     Alert,
     Business,
+    BusinessReview,
     Comment,
     DiscussionTopic,
     Event,
@@ -388,6 +389,59 @@ class EngagementEndpointTests(TestCase):
         slugs = {c for c, _ in NewsItem.CATEGORY_CHOICES}
         self.assertIn("for_sale", slugs)
         self.assertIn("announcements", slugs)
+
+
+class BusinessReviewTests(TestCase):
+    """Business reviews: write (auth), list, rating aggregation."""
+
+    def setUp(self):
+        self.c = Client(HTTP_HOST="localhost")
+        self.biz = Business.objects.create(
+            name="ReviewBiz", category="local_shop", is_approved=True
+        )
+        self.user = User.objects.create_user("reviewer", password="pass")
+
+    def test_review_requires_auth(self):
+        r = self.c.post(
+            f"/api/businesses/{self.biz.pk}/reviews/",
+            data=json.dumps({"rating": 5, "body": "great"}),
+            content_type="application/json",
+        )
+        self.assertIn(r.status_code, (401, 403))
+
+    def test_create_and_list_review(self):
+        self.c.force_login(self.user)
+        r = self.c.post(
+            f"/api/businesses/{self.biz.pk}/reviews/",
+            data=json.dumps({"rating": 4, "body": "good"}),
+            content_type="application/json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()["rating"], 4)
+
+        r2 = self.c.get(f"/api/businesses/{self.biz.pk}/reviews/")
+        data = r2.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["average"], 4.0)
+        self.assertEqual(data["reviews"][0]["rating"], 4)
+
+        r3 = self.c.get("/api/businesses/")
+        biz = next(b for b in r3.json() if b["id"] == self.biz.pk)
+        self.assertEqual(biz["rating"], 4.0)
+        self.assertEqual(biz["review_count"], 1)
+
+    def test_update_existing_review(self):
+        self.c.force_login(self.user)
+        url = f"/api/businesses/{self.biz.pk}/reviews/"
+        self.c.post(url, data=json.dumps({"rating": 3, "body": "meh"}),
+                    content_type="application/json")
+        r = self.c.post(url, data=json.dumps({"rating": 5, "body": "updated"}),
+                        content_type="application/json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            BusinessReview.objects.filter(business=self.biz, author=self.user).count(), 1
+        )
+        self.assertEqual(r.json()["rating"], 5)
 
 
 # ── API views & model integrity ─────────────────────────────────────

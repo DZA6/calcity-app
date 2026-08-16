@@ -107,6 +107,23 @@ class BusinessCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                  // Rating (only when there are reviews)
+                  if (item.reviewCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 13, color: Colors.amber),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${item.rating?.toStringAsFixed(1) ?? '—'} (${item.reviewCount})',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ],
                   const Spacer(),
                   // Bottom info
                   if (item.contactPhone != null && item.contactPhone!.isNotEmpty)

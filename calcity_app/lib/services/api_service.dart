@@ -532,4 +532,39 @@ class ApiService {
       return false;
     }
   }
+
+  // ── Business reviews ──────────────────────────────────────────────
+
+  /// Returns {average, count, reviews} for a business, or null on failure.
+  Future<Map<String, dynamic>?> fetchBusinessReviews(int businessId) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$baseUrl/api/businesses/$businessId/reviews/'))
+          .timeout(_timeout);
+      if (resp.statusCode == 200) {
+        return json.decode(resp.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
+  /// Submit (or update) the signed-in user's review. True on success.
+  Future<bool> submitBusinessReview({
+    required int businessId,
+    required int rating,
+    required String body,
+  }) async {
+    try {
+      final resp = await http
+          .post(Uri.parse('$baseUrl/api/businesses/$businessId/reviews/'),
+              headers: _headers(auth: true),
+              body: json.encode({'rating': rating, 'body': body}))
+          .timeout(_timeout);
+      return resp.statusCode == 200 || resp.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
 }

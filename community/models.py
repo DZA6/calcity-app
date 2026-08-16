@@ -406,3 +406,33 @@ class NewsletterSubscriber(models.Model):
         verbose_name = "Newsletter Subscriber"
         verbose_name_plural = "Newsletter Subscribers"
         ordering = ["-created_at"]
+
+
+class BusinessReview(models.Model):
+    """Star rating + written review of a local business (1-5 stars)."""
+
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="reviews"
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="business_reviews",
+    )
+    rating = models.PositiveSmallIntegerField(default=5)
+    body = models.TextField(blank=True)
+    is_hidden = models.BooleanField(
+        default=False, help_text="Staff: hide this review from the app"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.business.name}: {self.rating}\u2605 by {self.author}"
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "author"],
+                name="unique_review_per_business_per_author",
+            )
+        ]
