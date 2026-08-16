@@ -12,6 +12,7 @@ urlpatterns = [
     # News / Articles
     path("news/", views.news_list, name="news_list"),
     path("news/bulk-delete/", views.news_bulk_delete, name="news_bulk_delete"),
+    path("news/bulk-delete-older/", views.news_bulk_delete_older, name="news_bulk_delete_older"),
     path("news/new/", views.news_edit, name="news_edit"),
     path("news/<int:pk>/", views.news_edit, name="news_edit"),
     path("news/<int:pk>/delete/", views.news_delete, name="news_delete"),

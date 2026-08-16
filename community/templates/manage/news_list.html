@@ -31,11 +31,29 @@
   </form>
 </div>
 
+{% if deleted_count %}
+<div class="msg msg-success">{{ deleted_count }} article(s) deleted.</div>
+{% endif %}
+
 {% if articles %}
 <div class="card" style="padding:0;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">
-    <span id="sel-count" style="font-size:0.85rem;color:var(--text-light);">0 selected</span>
-    <button type="button" class="btn btn-sm btn-danger" onclick="bulkDelete()">Delete selected</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span id="sel-count" style="font-size:0.85rem;color:var(--text-light);">0 selected</span>
+      <button type="button" class="btn btn-sm btn-danger" onclick="bulkDelete()">Delete selected</button>
+    </div>
+    <form method="post" action="{% url 'manage:news_bulk_delete_older' %}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      {% csrf_token %}
+      <span style="font-size:0.85rem;color:var(--text-light);">Delete older than</span>
+      <input type="date" name="cutoff" id="cutoff-date" value="{{ default_cutoff }}" style="width:auto;padding:5px 10px;">
+      <span style="font-size:0.78rem;color:var(--text-light);white-space:nowrap;">
+        <a href="#" onclick="setCutoff(30);return false;">30d</a>
+        <a href="#" onclick="setCutoff(60);return false;">60d</a>
+        <a href="#" onclick="setCutoff(90);return false;">90d</a>
+        <a href="#" onclick="setCutoff(365);return false;">1yr</a>
+      </span>
+      <button type="submit" class="btn btn-sm btn-danger" onclick="return confirmDeleteOlder()">Delete</button>
+    </form>
   </div>
   <form id="bulk-form" method="post" action="{% url 'manage:news_bulk_delete' %}">
     {% csrf_token %}
@@ -157,6 +175,22 @@ function bulkDelete() {
     return;
   }
   document.getElementById('bulk-form').submit();
+}
+
+function setCutoff(days) {
+  var d = new Date();
+  d.setDate(d.getDate() - days);
+  var iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  document.getElementById('cutoff-date').value = iso;
+}
+
+function confirmDeleteOlder() {
+  var d = document.getElementById('cutoff-date').value;
+  if (!d) {
+    alert('Pick a date first.');
+    return false;
+  }
+  return confirm('Delete ALL articles older than ' + d + '? This cannot be undone.');
 }
 </script>
 {% endblock %}

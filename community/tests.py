@@ -292,6 +292,43 @@ class ScraperParseTests(TestCase):
         self.assertTrue(hasattr(MojaveUSDScraper, "scrape"))
 
 
+class ManagementNewsBulkTests(TestCase):
+    """Staff dashboard bulk-delete endpoints (mass delete + delete-older-than)."""
+
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.contrib.auth import get_user_model
+        self.timedelta = timedelta
+        self.timezone = timezone
+        User = get_user_model()
+        self.user = User.objects.create_user("staff", is_staff=True)
+        self.c = Client(HTTP_HOST="localhost")
+        self.c.force_login(self.user)
+
+    def _make_article(self, days_old, title):
+        n = NewsItem.objects.create(title=title, content="body", is_approved=True)
+        NewsItem.objects.filter(pk=n.pk).update(
+            created_at=self.timezone.now() - self.timedelta(days=days_old)
+        )
+        return n
+
+    def test_bulk_delete_older(self):
+        from django.urls import reverse
+        self._make_article(200, "Very old article")
+        self._make_article(5, "Recent article")
+        cutoff = (self.timezone.localdate() - self.timedelta(days=90)).isoformat()
+        r = self.c.post(reverse("manage:news_bulk_delete_older"), {"cutoff": cutoff})
+        self.assertEqual(r.status_code, 302)
+        self.assertFalse(NewsItem.objects.filter(title="Very old article").exists())
+        self.assertTrue(NewsItem.objects.filter(title="Recent article").exists())
+
+    def test_bulk_delete_older_requires_post(self):
+        from django.urls import reverse
+        r = self.c.get(reverse("manage:news_bulk_delete_older"))
+        self.assertEqual(r.status_code, 405)
+
+
 # ── API views & model integrity ─────────────────────────────────────
 
 class ApiViewTests(TestCase):

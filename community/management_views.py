@@ -11,6 +11,7 @@ Simple, modern UI for daily content management:
 Access at /manage/ (requires Django admin login).
 """
 import json
+from datetime import timedelta
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
@@ -18,6 +19,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from django.views.decorators.http import require_http_methods
 
@@ -97,6 +99,8 @@ def news_list(request):
             page.number, on_each_side=2, on_ends=1
         ),
         "ellipsis": paginator.ELLIPSIS,
+        "deleted_count": request.GET.get("deleted"),
+        "default_cutoff": (timezone.localdate() - timedelta(days=90)).isoformat(),
     }
     return render(request, "manage/news_list.html", ctx)
 
@@ -193,6 +197,17 @@ def news_bulk_delete(request):
     if ids:
         NewsItem.objects.filter(pk__in=ids).delete()
     return redirect("manage:news_list")
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def news_bulk_delete_older(request):
+    """Delete every article created before a chosen cutoff date."""
+    cutoff = parse_date(request.POST.get("cutoff", "").strip())
+    if cutoff is None:
+        return redirect("manage:news_list")
+    deleted, _ = NewsItem.objects.filter(created_at__date__lt=cutoff).delete()
+    return redirect(f"{reverse('manage:news_list')}?deleted={deleted}")
 
 
 @staff_member_required
