@@ -178,6 +178,27 @@ class ScraperParseTests(TestCase):
         self.assertEqual((mm, dd, yyyy), (8, 11, 2026))
         self.assertEqual(m.group(1), "City Council Meeting")
 
+    def test_is_california_city_detection(self):
+        from community.scrapers.base import is_california_city
+        self.assertTrue(is_california_city("California City council approves budget"))
+        self.assertTrue(is_california_city("Cal City road closure this weekend"))
+        self.assertTrue(is_california_city("Community event in 93505"))
+        self.assertFalse(is_california_city("Kern County opens new park"))
+        self.assertFalse(is_california_city("Bakersfield local city news roundup"))
+        self.assertFalse(is_california_city("Antelope Valley housing market update"))
+
+    def test_save_news_auto_approves_only_calcity(self):
+        from community.scrapers.calcity import CalCityScraper
+        s = CalCityScraper()
+        cal = s.save_news("California City park grand opening", "details",
+                          source_url="http://example.com/1")
+        other = s.save_news("Bakersfield mall expansion", "details",
+                            source_url="http://example.com/2")
+        self.assertIsNotNone(cal)
+        self.assertTrue(cal.is_approved)
+        self.assertIsNotNone(other)
+        self.assertFalse(other.is_approved)
+
     def test_school_pdf_parser_single_day(self):
         from community.scrapers.schools import MONTHS
         pat = re.compile(

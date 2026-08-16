@@ -93,6 +93,10 @@ def news_list(request):
         "categories": NewsItem.CATEGORY_CHOICES,
         "current_category": category,
         "current_status": status,
+        "page_range": paginator.get_elided_page_range(
+            page.number, on_each_side=2, on_ends=1
+        ),
+        "ellipsis": paginator.ELLIPSIS,
     }
     return render(request, "manage/news_list.html", ctx)
 
@@ -179,6 +183,16 @@ def news_delete(request, pk):
         "type_name": "News Article",
         "cancel_url": reverse("manage:news_list"),
     })
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def news_bulk_delete(request):
+    """Delete multiple news articles at once (mass delete)."""
+    ids = request.POST.getlist("ids")
+    if ids:
+        NewsItem.objects.filter(pk__in=ids).delete()
+    return redirect("manage:news_list")
 
 
 @staff_member_required

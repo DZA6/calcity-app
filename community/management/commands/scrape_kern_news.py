@@ -5,6 +5,10 @@ Fetches Google News RSS feeds for the region, deduplicates against
 existing articles, and creates NewsItem entries. Safe to run repeatedly
 — each run only adds new, unique stories.
 
+Articles that mention California City are auto-approved (visible in the
+app); all other regional news is saved unapproved so it stays hidden
+until a staff member turns it on in the dashboard.
+
 Usage:
     python manage.py scrape_kern_news              # default: 3 feeds, 20 articles each
     python manage.py scrape_kern_news --max 50     # 50 articles per feed
@@ -26,6 +30,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from community.models import NewsItem
+from community.scrapers.base import is_california_city
 
 logger = logging.getLogger("scrapers")
 
@@ -156,6 +161,7 @@ class Command(BaseCommand):
 
         total_fetched = 0
         total_created = 0
+        total_approved = 0
         total_dupes = 0
 
         for feed in FEEDS:
@@ -173,22 +179,32 @@ class Command(BaseCommand):
                     total_dupes += 1
                     continue
 
+                # California City articles are auto-approved; all other
+                # regional news is saved unapproved (hidden) for review.
+                is_approved = is_california_city(
+                    f"{art['title']} {art.get('source', '')} {art.get('snippet', '')}"
+                )
+
                 if not dry_run:
                     NewsItem.objects.create(
                         title=art["title"][:200],
                         content=art.get("snippet", ""),
                         source_url=art.get("article_url", art.get("google_url", "")),
                         category=cat,
-                        is_approved=True,
+                        is_approved=is_approved,
                     )
                 total_created += 1
+                if is_approved:
+                    total_approved += 1
 
             time.sleep(1)  # Be polite between feeds
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Done: {total_fetched} fetched, "
-                f"{total_created} new, {total_dupes} duplicates "
+                f"{total_created} new ({total_approved} California City, "
+                f"{total_created - total_approved} pending review), "
+                f"{total_dupes} duplicates "
                 f"{'(dry run)' if dry_run else ''}"
             )
         )

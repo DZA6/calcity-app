@@ -4,6 +4,7 @@ Provides HTTP fetching, deduplication, and model-saving primitives.
 """
 import hashlib
 import logging
+import re
 import time
 import urllib.request
 import urllib.error
@@ -18,6 +19,23 @@ from django.db import IntegrityError
 from community.models import NewsItem, Event, Business, CouncilAgenda, Alert
 
 logger = logging.getLogger("scrapers")
+
+
+# ── California City detection ────────────────────────────────────────────
+# Articles specifically about California City, CA are auto-approved; all other
+# scraped news is stored unapproved (hidden) until a staff member flips it on.
+CALCITY_PATTERNS = [
+    re.compile(r"\bcalifornia city\b", re.IGNORECASE),
+    re.compile(r"\bcal city\b", re.IGNORECASE),
+    re.compile(r"\bcalcity\b", re.IGNORECASE),
+    re.compile(r"\b93505\b"),
+]
+
+
+def is_california_city(text: str) -> bool:
+    """Return True if `text` is specifically about California City, CA."""
+    t = text or ""
+    return any(p.search(t) for p in CALCITY_PATTERNS)
 
 
 class BaseScraper(ABC):
@@ -123,11 +141,15 @@ class BaseScraper(ABC):
     # ------------------------------------------------------------------
 
     def save_news(self, title: str, content: str, category: str = "general",
-                   source_url: str = "", is_approved: bool = True) -> Optional[NewsItem]:
+                   source_url: str = "", is_approved: Optional[bool] = None) -> Optional[NewsItem]:
         title = title.strip()
         if self._is_junk_title(title) or self.is_duplicate(NewsItem, title, source_url):
             logger.debug("Duplicate news: %s", title[:80])
             return None
+        # Default: auto-approve only California City articles; everything else
+        # is saved unapproved (hidden from the app) for staff review.
+        if is_approved is None:
+            is_approved = is_california_city(f"{title} {content}")
         try:
             item = NewsItem.objects.create(
                 title=title[:200],

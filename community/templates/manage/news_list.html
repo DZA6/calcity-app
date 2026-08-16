@@ -33,65 +33,82 @@
 
 {% if articles %}
 <div class="card" style="padding:0;">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Category</th>
-          <th>Media</th>
-          <th>Status</th>
-          <th>Featured</th>
-          <th>Date</th>
-          <th style="width:60px;"></th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for article in articles %}
-      <tr>
-        <td>
-          <a href="{% url 'manage:news_edit' article.pk %}" style="color:var(--text);text-decoration:none;font-weight:500;">
-            {{ article.title|truncatechars:55 }}
-          </a>
-        </td>
-        <td><span class="badge badge-neutral">{{ article.get_category_display }}</span></td>
-        <td style="font-size:0.85rem;">
-          {% if article.image %}&#128247;{% endif %}
-          {% if article.video %}&#127910;{% endif %}
-          {% if not article.image and not article.video %}&mdash;{% endif %}
-        </td>
-        <td>
-          <label class="toggle" onclick="toggleField({{ article.pk }}, 'approve')">
-            <input type="checkbox" {% if article.is_approved %}checked{% endif %}>
-            <span class="slider"></span>
-          </label>
-        </td>
-        <td>
-          <label class="toggle" onclick="toggleField({{ article.pk }}, 'feature')">
-            <input type="checkbox" {% if article.featured %}checked{% endif %}>
-            <span class="slider"></span>
-          </label>
-        </td>
-        <td style="font-size:0.8rem;color:var(--text-light);white-space:nowrap;">{{ article.created_at|date:"M j" }}</td>
-        <td>
-          <a href="{% url 'manage:news_delete' article.pk %}" style="color:var(--danger);text-decoration:none;font-size:0.85rem;" title="Delete">&#128465;</a>
-        </td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">
+    <span id="sel-count" style="font-size:0.85rem;color:var(--text-light);">0 selected</span>
+    <button type="button" class="btn btn-sm btn-danger" onclick="bulkDelete()">Delete selected</button>
   </div>
+  <form id="bulk-form" method="post" action="{% url 'manage:news_bulk_delete' %}">
+    {% csrf_token %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:34px;"><input type="checkbox" onclick="toggleAll(this)" title="Select all"></th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Media</th>
+            <th>Status</th>
+            <th>Featured</th>
+            <th>Date</th>
+            <th style="width:60px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for article in articles %}
+        <tr>
+          <td><input type="checkbox" class="bulk-select" name="ids" value="{{ article.pk }}" onclick="updateCount()"></td>
+          <td>
+            <a href="{% url 'manage:news_edit' article.pk %}" style="color:var(--text);text-decoration:none;font-weight:500;">
+              {{ article.title|truncatechars:55 }}
+            </a>
+          </td>
+          <td><span class="badge badge-neutral">{{ article.get_category_display }}</span></td>
+          <td style="font-size:0.85rem;">
+            {% if article.image %}&#128247;{% endif %}
+            {% if article.video %}&#127910;{% endif %}
+            {% if not article.image and not article.video %}&mdash;{% endif %}
+          </td>
+          <td>
+            <label class="toggle" onclick="toggleField({{ article.pk }}, 'approve')">
+              <input type="checkbox" {% if article.is_approved %}checked{% endif %}>
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td>
+            <label class="toggle" onclick="toggleField({{ article.pk }}, 'feature')">
+              <input type="checkbox" {% if article.featured %}checked{% endif %}>
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td style="font-size:0.8rem;color:var(--text-light);white-space:nowrap;">{{ article.created_at|date:"M j" }}</td>
+          <td>
+            <a href="{% url 'manage:news_delete' article.pk %}" style="color:var(--danger);text-decoration:none;font-size:0.85rem;" title="Delete">&#128465;</a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
 </div>
 
 <!-- Pagination -->
 {% if articles.has_other_pages %}
 <div class="pagination">
   {% if articles.has_previous %}
-  <a href="?page={{ articles.previous_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">&laquo; Prev</a>
+  <a href="?page={{ articles.previous_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}&status={{ current_status }}">&laquo; Prev</a>
   {% endif %}
-  <span class="current">Page {{ articles.number }} of {{ articles.paginator.num_pages }}</span>
+  {% for p in page_range %}
+    {% if p == ellipsis %}
+    <span>&hellip;</span>
+    {% elif p == articles.number %}
+    <span class="current">{{ p }}</span>
+    {% else %}
+    <a href="?page={{ p }}{% if current_category %}&category={{ current_category }}{% endif %}&status={{ current_status }}">{{ p }}</a>
+    {% endif %}
+  {% endfor %}
   {% if articles.has_next %}
-  <a href="?page={{ articles.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">Next &raquo;</a>
+  <a href="?page={{ articles.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}&status={{ current_status }}">Next &raquo;</a>
   {% endif %}
 </div>
 {% endif %}
@@ -116,6 +133,30 @@ function toggleField(pk, field) {
   }).then(r => r.json()).then(d => {
     if (!d.ok) location.reload();
   });
+}
+
+function toggleAll(src) {
+  document.querySelectorAll('input.bulk-select').forEach(function (cb) {
+    cb.checked = src.checked;
+  });
+  updateCount();
+}
+
+function updateCount() {
+  var n = document.querySelectorAll('input.bulk-select:checked').length;
+  document.getElementById('sel-count').textContent = n + ' selected';
+}
+
+function bulkDelete() {
+  var boxes = document.querySelectorAll('input.bulk-select:checked');
+  if (boxes.length === 0) {
+    alert('Select at least one article to delete.');
+    return;
+  }
+  if (!confirm('Delete ' + boxes.length + ' selected article(s)? This cannot be undone.')) {
+    return;
+  }
+  document.getElementById('bulk-form').submit();
 }
 </script>
 {% endblock %}
