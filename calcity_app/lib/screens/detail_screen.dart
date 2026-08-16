@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../widgets/comments_section.dart';
 import '../widgets/reaction_bar.dart';
 import '../widgets/business_reviews_section.dart';
+import '../widgets/full_article_text.dart';
 
 class DetailScreen extends StatelessWidget {
   final String title;
@@ -66,13 +67,16 @@ class DetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Content
-            Text(
-              content,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                height: 1.6,
+            // Content (news articles load the full body; others show as-is)
+            if (itemType == 'news' && itemId != null)
+              FullArticleText(articleId: itemId!, snippet: content)
+            else
+              Text(
+                content,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.6,
+                ),
               ),
-            ),
             const SizedBox(height: 24),
 
             // Business reviews (business detail only)

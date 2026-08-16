@@ -256,7 +256,7 @@ class RidgecrestScraper(BaseScraper):
 
             item = self.save_news(
                 title=f"[Ridgecrest] {title}",
-                content=content or title,
+                content=self.full_article_text(alert_url, content or title),
                 category="general",
                 source_url=alert_url,
             )

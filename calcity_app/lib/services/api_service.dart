@@ -363,6 +363,23 @@ class ApiService {
     return [];
   }
 
+  /// Fetch the full article body for a news item (the server self-heals by
+  /// fetching + caching the full text when only a snippet is stored).
+  Future<NewsItem?> fetchNewsFull(int id) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/news/$id/full/'))
+          .timeout(_timeout);
+      if (response.statusCode == 200) {
+        return NewsItem.fromJson(
+            json.decode(response.body) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
   Future<WeatherInfo?> fetchWeather() async {
     try {
       final response =

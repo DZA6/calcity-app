@@ -385,6 +385,20 @@ class EngagementEndpointTests(TestCase):
             ).exists()
         )
 
+    def test_news_full_endpoint(self):
+        n = NewsItem.objects.create(
+            title="Full test", content="short snippet", is_approved=True
+        )
+        r = self.c.get(f"/api/news/{n.pk}/full/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["content"], "short snippet")
+
+        hidden = NewsItem.objects.create(
+            title="Hidden", content="x", is_approved=False
+        )
+        r2 = self.c.get(f"/api/news/{hidden.pk}/full/")
+        self.assertEqual(r2.status_code, 404)
+
     def test_category_choices_include_classifieds(self):
         slugs = {c for c, _ in NewsItem.CATEGORY_CHOICES}
         self.assertIn("for_sale", slugs)

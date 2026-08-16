@@ -38,6 +38,37 @@ def is_california_city(text: str) -> bool:
     return any(p.search(t) for p in CALCITY_PATTERNS)
 
 
+def extract_article_text(url: str, max_chars: int = 5000) -> str:
+    """Fetch a URL and extract the main article body with trafilatura.
+
+    Returns "" on any failure (network, parse error, or trafilatura not
+    installed) so callers can fall back to a snippet.
+    """
+    try:
+        import trafilatura
+    except ImportError:
+        return ""
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (compatible; CalCityBot/1.0; "
+                    "+https://calcityapp.com)"
+                )
+            },
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+    except Exception:
+        return ""
+    try:
+        text = trafilatura.extract(html)
+    except Exception:
+        text = None
+    return (text or "").strip()[:max_chars]
+
+
 class BaseScraper(ABC):
     """Common HTTP + dedup infrastructure. Subclass per city."""
 
@@ -139,6 +170,13 @@ class BaseScraper(ABC):
     # ------------------------------------------------------------------
     # Save helpers
     # ------------------------------------------------------------------
+
+    def full_article_text(self, url: str, fallback: str = "", max_chars: int = 5000) -> str:
+        """Extract full article text from `url`, falling back to `fallback`."""
+        if not url:
+            return fallback
+        text = extract_article_text(url, max_chars=max_chars)
+        return text or fallback
 
     def save_news(self, title: str, content: str, category: str = "general",
                    source_url: str = "", is_approved: Optional[bool] = None) -> Optional[NewsItem]:

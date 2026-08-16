@@ -30,7 +30,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from community.models import NewsItem
-from community.scrapers.base import is_california_city
+from community.scrapers.base import extract_article_text, is_california_city
 
 logger = logging.getLogger("scrapers")
 
@@ -186,10 +186,15 @@ class Command(BaseCommand):
                 )
 
                 if not dry_run:
+                    article_url = art.get("article_url") or art.get("google_url", "")
+                    snippet = art.get("snippet", "")
+                    # Store the full article body when we can extract it;
+                    # fall back to the RSS snippet otherwise.
+                    content = extract_article_text(article_url) or snippet
                     NewsItem.objects.create(
                         title=art["title"][:200],
-                        content=art.get("snippet", ""),
-                        source_url=art.get("article_url", art.get("google_url", "")),
+                        content=content,
+                        source_url=article_url,
                         category=cat,
                         is_approved=is_approved,
                     )

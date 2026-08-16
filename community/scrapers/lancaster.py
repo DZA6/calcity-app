@@ -59,7 +59,9 @@ class LancasterScraper(BaseScraper):
             if not title or len(title) < 10:
                 continue
 
-            content = description or f"Antelope Valley news. Read more at {link}"
+            content = self.full_article_text(
+                link, description or f"Antelope Valley news. Read more at {link}"
+            )
 
             item_obj = self.save_news(
                 title=f"[Lancaster] {title}",

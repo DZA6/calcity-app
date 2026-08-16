@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 from django.shortcuts import get_object_or_404
+from community.scrapers.base import extract_article_text
 
 from .models import (
     Alert,
@@ -498,3 +499,22 @@ class BusinessReviewView(APIView):
             BusinessReviewSerializer(review, context={"request": request}).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class NewsFullView(APIView):
+    """GET /api/news/<id>/full/ — return the full article text.
+
+    Self-heals: if the stored content is still a short snippet and the item
+    has a source URL, fetch + extract the full body once and cache it.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        news = get_object_or_404(NewsItem, pk=pk, is_approved=True)
+        if len(news.content) < 400 and news.source_url:
+            text = extract_article_text(news.source_url)
+            if text and len(text) > len(news.content):
+                news.content = text
+                news.save(update_fields=["content"])
+        return Response(NewsItemSerializer(news, context={"request": request}).data)
